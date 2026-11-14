@@ -1,5 +1,5 @@
+import { stableContext } from '@/lib/stable-context'
 import {
-  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -23,7 +23,7 @@ type ThemeProviderState = {
   toggleTheme: () => void
 }
 
-const ThemeProviderContext = createContext<ThemeProviderState | null>(null)
+const ThemeProviderContext = stableContext<ThemeProviderState | null>('theme', null)
 
 function getSystemTheme(): 'dark' | 'light' {
   if (typeof window === 'undefined') return 'light'

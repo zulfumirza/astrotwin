@@ -1,5 +1,5 @@
+import { stableContext } from '@/lib/stable-context'
 import {
-  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -17,7 +17,7 @@ interface I18n {
   t: (key: UiKey, params?: Record<string, string | number>) => string
 }
 
-const Ctx = createContext<I18n | null>(null)
+const Ctx = stableContext<I18n | null>('i18n', null)
 const STORAGE_KEY = 'astrotwin:lang'
 
 function initialLang(): Lang {

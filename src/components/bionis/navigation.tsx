@@ -1,5 +1,5 @@
+import { stableContext } from '@/lib/stable-context'
 import {
-  createContext,
   useContext,
   useMemo,
   useState,
@@ -13,7 +13,7 @@ type DashboardNavigation = {
   navigate: (pathname: string) => void
 }
 
-const DashboardNavigationContext = createContext<DashboardNavigation | null>(null)
+const DashboardNavigationContext = stableContext<DashboardNavigation | null>('navigation', null)
 
 export function DashboardNavigationProvider({ children }: { children: ReactNode }) {
   const [pathname, setPathname] = useState('/')

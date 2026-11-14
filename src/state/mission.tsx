@@ -1,8 +1,8 @@
+import { stableContext } from '@/lib/stable-context'
 // App state: scenario, crew selection, privacy, live space-weather signals,
 // daily check-ins and the delayed report queue. All scoring is delegated to
 // the pure engine (src/engine); this file only wires data into it.
 import {
-  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -96,7 +96,7 @@ interface MissionState {
   transitLeftMs: (r: Report, now: number) => number
 }
 
-const Ctx = createContext<MissionState | null>(null)
+const Ctx = stableContext<MissionState | null>('mission', null)
 export const DEFAULT_STORM_CLOCK = '2024-05-11T02:00:00Z'
 export const FAST_FORWARD = 60
 
