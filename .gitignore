@@ -1,0 +1,18 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Local tooling
+.claude/
+.vercel/
+
+# Stale lockfile from the design export; npm (package-lock.json) is the package manager.
+bun.lock
+
+# Design-tool export notes: not part of the app, must not be served publicly.
+public/assets/aistudio/

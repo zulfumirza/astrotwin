@@ -1,0 +1,6 @@
+{
+  "name": "AstroTwin",
+  "description": "Onboard astronaut health monitor built on NASA's five hazards of human spaceflight. Simulated crew data. Not a medical device.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
