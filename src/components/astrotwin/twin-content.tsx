@@ -24,9 +24,9 @@ import {
 import { BASELINE_DAYS, METRICS, twinSeries, type MetricId } from '../../engine'
 import { useI18n } from '../../i18n'
 import { useMission } from '../../state/mission'
-import { AXIS_TICK, PageHeader, Pill, SimBadge } from './ui'
+import { AXIS_TICK, InfoButton, PageHeader, Pill, SimBadge, SimulatedBadge } from './ui'
 
-const CHART_METRICS: MetricId[] = ['pvtMs', 'sleepH', 'hrv', 'restHr', 'lymph']
+const CHART_METRICS: MetricId[] = ['pvtMs', 'sleepH', 'hrv', 'restHr', 'sysBp', 'spo2', 'tempC', 'glucose', 'lymph', 'mskIndex']
 
 export function TwinContent() {
   const { t } = useI18n()
@@ -152,9 +152,13 @@ export function TwinContent() {
               {t(`metric.${metric}`)} ({unit})
             </h3>
           </div>
+          <div className="flex flex-wrap items-center gap-2">
+          <InfoButton id={metric} name={t(`metric.${metric}`)} />
+          <SimulatedBadge />
           <Pill level={state.deviant ? 'alert' : 'nominal'}>
             {state.deviant ? t('twin.status.off') : t('twin.status.on')}
           </Pill>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-muted-foreground">

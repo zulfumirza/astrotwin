@@ -29,11 +29,14 @@ export function expectedValue(id: MetricId, baseline: Baseline, day: number) {
   return baseline.mean + METRICS[id].adapt(day, baseline.mean)
 }
 
-const badSign = (id: MetricId) => (METRICS[id].bad === 'high' ? 1 : -1)
+/** Signed so that positive = unhealthy direction (either direction for two-sided metrics). */
+const toBad = (id: MetricId, z: number) =>
+  METRICS[id].bad === 'high' ? z : METRICS[id].bad === 'low' ? -z : Math.abs(z)
 
 function outsideEarth(id: MetricId, value: number) {
   const [lo, hi] = METRICS[id].earth
-  return METRICS[id].bad === 'high' ? value > hi : value < lo
+  const bad = METRICS[id].bad
+  return bad === 'high' ? value > hi : bad === 'low' ? value < lo : value > hi || value < lo
 }
 
 /** z-score of one day against the expected space trajectory. */
@@ -70,10 +73,9 @@ export function twinAlarmDay(
   id: MetricId,
   baseline: Baseline = computeBaseline(days, id),
 ): number | null {
-  const sign = badSign(id)
   for (let i = 0; i < days.length; i++) {
     if (days[i].day < BASELINE_DAYS + PERSISTENCE_DAYS) continue
-    if (sign * rollingZ(id, baseline, days, i) >= Z_ALARM) return days[i].day
+    if (toBad(id, rollingZ(id, baseline, days, i)) >= Z_ALARM) return days[i].day
   }
   return null
 }
@@ -82,7 +84,7 @@ export function metricState(days: DayRecord[], id: MetricId): MetricState {
   const baseline = computeBaseline(days, id)
   const last = days[days.length - 1]
   const z = rollingZ(id, baseline, days, days.length - 1)
-  const zBad = badSign(id) * z
+  const zBad = toBad(id, z)
   return {
     id,
     value: last[id],

@@ -26,7 +26,9 @@ export interface RuleInput {
   sepActive: boolean
 }
 
-const OBJECTIVE: MetricId[] = ['restHr', 'hrv', 'sleepH', 'pvtMs', 'lymph', 'bodyMass']
+const OBJECTIVE: MetricId[] = [
+  'restHr', 'hrv', 'sleepH', 'pvtMs', 'lymph', 'bodyMass', 'tempC', 'glucose', 'spo2', 'sysBp', 'mskIndex',
+]
 
 export function compoundFindings(input: RuleInput): Finding[] {
   const { record, metrics, sleepDebt7, co2Avg3, stressAvg5, sepActive } = input

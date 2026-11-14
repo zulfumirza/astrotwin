@@ -8,7 +8,7 @@ import { formatDelay, SBAR_KEYS, type Tier } from '../../engine'
 import { useI18n } from '../../i18n'
 import { TIER_NAMES } from '../../i18n/findings'
 import { useMission, useNow, type Report } from '../../state/mission'
-import { PageHeader, Pill, SimBadge, SourceBadge, tierLevel, Toggle } from './ui'
+import { PageHeader, Pill, SimBadge, SimulatedBadge, SourceBadge, tierLevel, Toggle } from './ui'
 import { useNarration } from './use-narration'
 
 const TIERS: Tier[] = ['routine', 'anomaly', 'critical']
@@ -87,6 +87,7 @@ export function ReportsContent() {
               <Pill level={tierLevel[current.tier]} className="px-2.5 text-xs">
                 {TIER_NAMES[lang][current.tier]}
               </Pill>
+              <SimulatedBadge />
               <SourceBadge source={source} />
             </div>
           </div>

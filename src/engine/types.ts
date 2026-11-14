@@ -23,6 +23,11 @@ export type MetricId =
   | 'pvtMs'
   | 'lymph'
   | 'bodyMass'
+  | 'tempC'
+  | 'glucose'
+  | 'spo2'
+  | 'sysBp'
+  | 'mskIndex'
 
 export interface DayRecord {
   day: number
@@ -32,6 +37,16 @@ export interface DayRecord {
   pvtMs: number
   lymph: number
   bodyMass: number
+  /** Core body temperature, °C. */
+  tempC: number
+  /** Fasting blood glucose, mg/dL. */
+  glucose: number
+  /** Blood oxygen saturation, %. */
+  spo2: number
+  /** Systolic blood pressure, mmHg. */
+  sysBp: number
+  /** Simulated bone & muscle index, 100 = pre-flight. */
+  mskIndex: number
   exerciseMin: number
   /** Cabin ppCO2 in mmHg (shared environment). */
   co2: number

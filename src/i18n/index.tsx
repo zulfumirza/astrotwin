@@ -27,7 +27,9 @@ function initialLang(): Lang {
   } catch {
     /* ignore */
   }
-  return typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('tr') ? 'tr' : 'en'
+  // English is the primary language: without a saved choice the app always
+  // opens in EN (the browser language is deliberately not used). TR is opt-in.
+  return 'en'
 }
 
 export function LangProvider({ children }: { children: ReactNode }) {

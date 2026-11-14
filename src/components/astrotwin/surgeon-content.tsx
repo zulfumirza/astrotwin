@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils'
 import { useI18n } from '../../i18n'
 import { findingText, HAZARD_NAMES, LEVEL_NAMES, TIER_NAMES } from '../../i18n/findings'
 import { useMission } from '../../state/mission'
-import { levelText, PageHeader, Pill, SimBadge, SourceBadge, tierLevel } from './ui'
+import { levelText, PageHeader, Pill, SimBadge, SimulatedBadge, SourceBadge, tierLevel } from './ui'
 import { useNarration } from './use-narration'
 
 const levelIcon = {
@@ -73,7 +73,10 @@ export function SurgeonContent() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">{t('surgeon.alerts', { count: current.findings.length })}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-medium">{t('surgeon.alerts', { count: current.findings.length })}</h2>
+          <SimulatedBadge />
+        </div>
         {current.findings.length === 0 ? (
           <div className="flex items-center gap-3 rounded-2xl border bg-background p-4">
             <CheckCircleRegularIcon className="size-5 shrink-0 text-(--vital-good)" />

@@ -2,6 +2,7 @@
 // tokens and class recipes from the Bionis components (pills, cards, headers).
 import { useEffect, useState, type ComponentType, type ReactNode, type SVGProps } from 'react'
 import {
+  InfoIcon,
   OrbitIcon,
   RadiationIcon,
   SatelliteDishIcon,
@@ -9,9 +10,11 @@ import {
   WindIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import type { HazardId, Level, Tier } from '../../engine'
 import { useI18n } from '../../i18n'
+import { INFO, type InfoId } from '../../i18n/info'
 import type { DataSource } from '../../services/http'
 
 export const levelPill: Record<Level, string> = {
@@ -88,16 +91,17 @@ export function Pill({ level, children, className }: { level: Level; children: R
 }
 
 /** Tells the user whether a number is live, a cached copy or embedded data. */
-export function SourceBadge({ source, at, className }: { source: DataSource; at?: number; className?: string }) {
+export function SourceBadge({ source, at, className }: { source: DataSource | 'simulated'; at?: number; className?: string }) {
   const { t, lang } = useI18n()
-  const label = source === 'live' ? t('src.live') : source === 'cache' ? t('src.cache') : t('src.embedded')
+  const label =
+    source === 'live' ? t('src.live') : source === 'cache' ? t('src.cache') : source === 'simulated' ? t('src.simulated') : t('src.embedded')
   const time =
-    at && source !== 'embedded'
+    at && source !== 'embedded' && source !== 'simulated'
       ? new Date(at).toLocaleTimeString(lang === 'tr' ? 'tr-TR' : 'en-GB', { hour: '2-digit', minute: '2-digit' })
       : null
   return (
     <span
-      title={t('src.title')}
+      title={source === 'simulated' ? t('src.simulatedTitle') : t('src.title')}
       className={cn(
         'inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-background px-2.5 py-1.5 text-xs font-medium tracking-tight',
         source === 'live' ? 'text-(--live)' : source === 'cache' ? 'text-(--chart-warn)' : 'text-(--chart-period)',
@@ -114,6 +118,48 @@ export function SourceBadge({ source, at, className }: { source: DataSource; at?
       {label}
       {time ? <span className="font-normal text-muted-foreground">{time}</span> : null}
     </span>
+  )
+}
+
+/** Marks a panel whose crew data is simulated; same style as the Live / Embedded badges. */
+export function SimulatedBadge({ className }: { className?: string }) {
+  return <SourceBadge source="simulated" className={cn('bg-muted', className)} />
+}
+
+/** "Why this matters" info button: three plain-language lines per indicator. */
+export function InfoButton({ id, name }: { id: InfoId; name: string }) {
+  const { t, lang } = useI18n()
+  const info = INFO[lang][id]
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={t('info.open', { name })}
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          <InfoIcon className="size-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="bionis-dashboard w-80 max-w-[calc(100vw-2rem)] p-3">
+        <p className="text-sm font-medium">{t('info.title')}</p>
+        <p className="mb-2 text-xs text-muted-foreground">{name}</p>
+        <dl className="flex flex-col gap-2">
+          {(
+            [
+              ['info.why', info.why],
+              ['info.skew', info.skew],
+              ['info.tell', info.tell],
+            ] as const
+          ).map(([key, body]) => (
+            <div key={key} className="rounded-lg bg-muted px-2.5 py-2">
+              <dt className="text-xs font-medium text-muted-foreground">{t(key)}</dt>
+              <dd className="text-sm leading-snug">{body}</dd>
+            </div>
+          ))}
+        </dl>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

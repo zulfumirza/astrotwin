@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { ClipboardCheckIcon, EyeIcon, TimerIcon } from 'lucide-react'
+import { AwardIcon, ClipboardCheckIcon, EyeIcon, FlameIcon, TimerIcon } from 'lucide-react'
 import { useDashboardNavigation } from '../bionis/navigation'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useI18n } from '../../i18n'
 import { TIER_NAMES } from '../../i18n/findings'
 import { useMission } from '../../state/mission'
-import { CardTitle, PageHeader, Pill, Segmented, SimBadge, tierLevel } from './ui'
+import { CardTitle, InfoButton, PageHeader, Pill, Segmented, SimBadge, SimulatedBadge, tierLevel } from './ui'
 
 const PVT_TRIALS = 5
 const PVT_KEY = 'astrotwin:pvt-baseline'
@@ -58,7 +58,7 @@ function PvtCard() {
     setPhase('done')
     // Map the user's change vs. THEIR baseline onto the selected crew member's
     // own expected reaction time, so a naturally slower/faster user is not penalised.
-    submitCheck(current.crewId, { pvtMs: Math.round(current.metrics.pvtMs.expected * ratio) })
+    submitCheck(current.crewId, { pvtMs: Math.round(current.metrics.pvtMs.expected * ratio) }, 'pvt')
   }
 
   const press = () => {
@@ -92,7 +92,7 @@ function PvtCard() {
       <CardTitle
         icon={TimerIcon}
         color="var(--insight-prediction)"
-        right={<span className="text-xs text-muted-foreground">{t('pvt.trial', { n: Math.min(times.length + (phase === 'done' ? 0 : 1), PVT_TRIALS), total: PVT_TRIALS })}</span>}
+        right={<span className="flex items-center gap-1"><InfoButton id="pvtMs" name={t('metric.pvtMs')} /><span className="text-xs text-muted-foreground">{t('pvt.trial', { n: Math.min(times.length + (phase === 'done' ? 0 : 1), PVT_TRIALS), total: PVT_TRIALS })}</span></span>}
       >
         {t('pvt.title')}
       </CardTitle>
@@ -156,14 +156,14 @@ function AmslerCard() {
   }
   const abnormal = marked.size > 0 || manual
   const save = () => {
-    submitCheck(current.crewId, { visionChange: abnormal })
+    submitCheck(current.crewId, { visionChange: abnormal }, 'vision')
     setSaved(abnormal)
   }
   const size = GRID * CELL
 
   return (
     <article className="flex flex-col gap-5 rounded-2xl border bg-[linear-gradient(180deg,rgb(20_184_166/0.08)_0%,transparent_42%)] p-5">
-      <CardTitle icon={EyeIcon} color="var(--insight-actions)">
+      <CardTitle icon={EyeIcon} color="var(--insight-actions)" right={<InfoButton id="vision" name={t('metric.vision')} />}>
         {t('amsler.title')}
       </CardTitle>
       <p className="text-sm leading-relaxed text-muted-foreground">{t('amsler.help')}</p>
@@ -256,7 +256,7 @@ function SelfReportCard() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     const hours = Math.min(14, Math.max(0, Number(sleepH) || 0))
-    submitCheck(current.crewId, { mood, stress, sleepH: hours, feelsFine, headache, rash })
+    submitCheck(current.crewId, { mood, stress, sleepH: hours, feelsFine, headache, rash }, 'self')
     setSaved(true)
   }
   const checkbox = (label: string, checked: boolean, set: (v: boolean) => void) => (
@@ -268,7 +268,7 @@ function SelfReportCard() {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-5 rounded-2xl border bg-background p-5">
-      <CardTitle icon={ClipboardCheckIcon} color="var(--bionis-blue)">
+      <CardTitle icon={ClipboardCheckIcon} color="var(--bionis-blue)" right={<InfoButton id="mood" name={t('metric.mood')} />}>
         {t('check.form')}
       </CardTitle>
       <div className="flex flex-col gap-2">
@@ -280,7 +280,7 @@ function SelfReportCard() {
         <Segmented value={stress} options={scale} onChange={setStress} label={t('check.stress')} />
       </div>
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium">{t('check.sleep')}</span>
+        <span className="flex items-center gap-1.5 font-medium">{t('check.sleep')}<InfoButton id="sleepH" name={t('metric.sleepH')} /></span>
         <input
           type="number"
           step="0.5"
@@ -307,6 +307,60 @@ function SelfReportCard() {
   )
 }
 
+function StreakCard() {
+  const { t } = useI18n()
+  const { current, checkinFor } = useMission()
+  const s = checkinFor(current.crewId)
+  const badges = [
+    { id: 'week', on: s.badges.week, icon: FlameIcon },
+    { id: 'full', on: s.badges.full, icon: ClipboardCheckIcon },
+    { id: 'vision', on: s.badges.vision, icon: EyeIcon },
+  ] as const
+  return (
+    <section className="flex flex-col gap-4 rounded-2xl border bg-background p-4 md:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-(--chart-warn-bg) text-(--chart-warn)">
+            <FlameIcon className="size-5" />
+          </span>
+          <div>
+            <p className="text-sm font-medium">{t('streak.title')} · {current.name}</p>
+            <p className="leading-none">
+              <span className="text-2.5xl font-medium tabular-nums">{s.streak}</span>{' '}
+              <span className="font-normal">{t('streak.days')}</span>
+            </p>
+          </div>
+        </div>
+        <SimulatedBadge />
+      </div>
+      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        {badges.map((b) => {
+          const Icon = b.on ? b.icon : AwardIcon
+          return (
+            <li
+              key={b.id}
+              className={cn(
+                'flex items-center gap-3 rounded-xl px-3 py-2.5',
+                b.on ? 'bg-(--live)/10' : 'bg-muted/60',
+              )}
+            >
+              <Icon className={cn('size-5 shrink-0', b.on ? 'text-(--live)' : 'text-muted-foreground')} />
+              <div className="min-w-0">
+                <p className={cn('text-sm font-medium', !b.on && 'text-muted-foreground')}>
+                  {t(`streak.badge.${b.id}`)}{' '}
+                  <span className="text-xs font-normal">· {b.on ? t('streak.earned') : t('streak.open')}</span>
+                </p>
+                <p className="text-xs text-muted-foreground">{t(`streak.badge.${b.id}.sub`)}</p>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+      <p className="text-xs text-muted-foreground">{t('streak.sub')}</p>
+    </section>
+  )
+}
+
 export function CheckContent() {
   const { t, lang } = useI18n()
   const { navigate } = useDashboardNavigation()
@@ -328,6 +382,7 @@ export function CheckContent() {
         }
       />
       <SimBadge />
+      <StreakCard />
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <PvtCard key={`pvt-${current.crewId}`} />
         <SelfReportCard />

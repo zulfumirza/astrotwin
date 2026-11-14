@@ -24,6 +24,11 @@ AstroTwin is an in-vehicle (offline-capable) health assistant built on NASA's **
 | **Delay awareness**: live Earth–vehicle light time, tiered reporting (Routine / Anomaly / Critical), SBAR reports, a Mission Control screen that receives reports after the delay | SBAR reports, Mission Control |
 | **Privacy**: the astronaut chooses whether behavioural detail is shared in non-critical reports; critical thresholds are always shared in full | SBAR reports, Settings |
 | **Daily check**: PVT-style reaction test (your own first run is your baseline), mood/stress/sleep/symptoms, Amsler-grid vision self-test | Daily check |
+| **Vital signs**: resting HR, HRV, blood pressure, SpO₂, body temperature, fasting glucose, sleep, reaction time, lymphocytes, bone & muscle index — each with a personal baseline and the same deviation rule (temperature, glucose and blood pressure are two-sided) | Crew, Digital twin |
+| **Body map**: clickable figure (brain, eyes, heart, lungs, bones & muscles, whole body), coloured by current status, keyboard-operable | Crew |
+| **"Why this matters"** cards on every indicator: why we measure it, what can skew it, when to tell the flight surgeon | everywhere an indicator is shown |
+| **Crisis mode**: at Critical tier one high-contrast card on top — what happened, 1–3 steps, when the report reaches Earth | every onboard screen |
+| **Check-in streak** and three gentle badges (7-day streak, Full check, Vision check); no points, no rankings | Daily check |
 | **Demo scenarios**: Nominal cruise, **Hidden decline** (opening scenario), Solar storm (real GLE74 event, 11 May 2024), Immune watch | scenario menu on Crew |
 
 ## Run it

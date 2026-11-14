@@ -3,6 +3,8 @@ import { DashboardSidebar } from './components/bionis/sidebar'
 import { DashboardTopbar } from './components/bionis/topbar'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { useI18n } from './i18n'
+import { CrisisCard } from './components/astrotwin/crisis-card'
+import { useDashboardNavigation } from './components/bionis/navigation'
 import './dashboard.css'
 
 type DashboardLayoutProps = {
@@ -22,6 +24,7 @@ const FOOTER_LINKS = [
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { t } = useI18n()
+  const { pathname } = useDashboardNavigation()
   return (
     <SidebarProvider
       defaultOpen
@@ -44,8 +47,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <main className="flex flex-1 flex-col overflow-hidden">
         <DashboardTopbar />
         <div id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto px-4 py-6 outline-none md:px-8 md:py-10">
+          {/* Crisis mode: shown above every onboard screen; Mission Control is Earth's view. */}
+          {pathname !== '/mission-control' ? <CrisisCard /> : null}
           {children}
           <footer className="mt-10 flex flex-col gap-2 border-t pt-4 text-xs leading-relaxed text-muted-foreground">
+            <p className="text-sm text-foreground">
+              {t('footer.builtBy')}{' '}
+              <span className="font-medium">Zülfü Mirza Gür</span> (
+              <a href="https://zulfumirza.com" target="_blank" rel="noreferrer" className="underline underline-offset-4 hover:text-muted-foreground">
+                zulfumirza.com
+              </a>
+              ) · <span className="font-medium">TheAstro</span> (
+              <a href="https://theastro.us" target="_blank" rel="noreferrer" className="underline underline-offset-4 hover:text-muted-foreground">
+                theastro.us
+              </a>
+              ) · NASA Space Apps Challenge 2026
+            </p>
             <p>{t('footer.disclaimer')}</p>
             <p className="flex flex-wrap gap-x-3 gap-y-1">
               <span>{t('footer.sources')}:</span>

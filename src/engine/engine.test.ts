@@ -6,6 +6,8 @@ import {
   auToDelaySec,
   buildMission,
   buildPayload,
+  checkinStatus,
+  NO_CHECKS,
   earthAlarmDay,
   earthMarsDistanceAu,
   formatDelay,
@@ -164,6 +166,50 @@ describe('privacy and SBAR', () => {
     expect(numbersAreGrounded({ ...sbar, assessment: 'Reaction time is 999 ms.' }, p)).toBe(false)
     expect(isValidSbar({ ...sbar, crewMessage: '' })).toBe(false)
     expect(isValidSbar({ situation: 'x' })).toBe(false)
+  })
+})
+
+describe('added vitals: temperature, glucose, SpO₂, blood pressure, bone & muscle', () => {
+  const NEW = ['tempC', 'glucose', 'spo2', 'sysBp', 'mskIndex'] as const
+
+  it('stays quiet for every crew member on a nominal cruise', () => {
+    for (const a of assessMission(buildMission('nominal'), MARS)) {
+      for (const id of NEW) expect(a.metrics[id].deviant, `${a.crewId} ${id}`).toBe(false)
+    }
+  })
+  it('flags a fever two-sidedly: high temperature is a deviation', () => {
+    const { mission } = byId('immune', 'ms2')
+    const a = assess(mission.crew.find((c) => c.id === 'ms2')!, MARS)
+    expect(a.metrics.tempC.zBad).toBeGreaterThan(2)
+    expect(a.findings.some((f) => f.id === 'metric.tempC')).toBe(true)
+  })
+  it('treats a LOW temperature as a deviation too (two-sided rule)', () => {
+    const { mission } = byId('nominal', 'cdr')
+    const days = mission.crew.find((c) => c.id === 'cdr')!.days
+    const cold = days.map((d) => (d.day >= 36 ? { ...d, tempC: 35.6 } : d))
+    // A ~1.3 °C drop is so large that the 3-day mean crosses z = 2 on the first cold day.
+    expect(twinAlarmDay(cold, 'tempC')).toBe(36)
+    expect(earthAlarmDay(cold, 'tempC')).toBe(38) // Earth range (< 36.1 °C) needs 3 days
+  })
+  it('adds the new vitals to the hidden-decline picture without changing its critical tier', () => {
+    const { crew } = byId('hidden', 'plt')
+    const a = assess(crew, MARS)
+    expect(a.tier).toBe('critical')
+    expect(a.metrics.glucose.zBad).toBeGreaterThan(2)
+  })
+})
+
+describe('daily check-in streak (gentle gamification)', () => {
+  it('extends the streak only when a check is done today', () => {
+    expect(checkinStatus('plt', NO_CHECKS).streak).toBe(3)
+    expect(checkinStatus('plt', { ...NO_CHECKS, self: true }).streak).toBe(4)
+  })
+  it('awards the three badges from what was actually done', () => {
+    const none = checkinStatus('plt', NO_CHECKS).badges
+    expect(none).toEqual({ week: false, full: false, vision: false })
+    const all = checkinStatus('cdr', { pvt: true, self: true, vision: true }).badges
+    expect(all).toEqual({ week: true, full: true, vision: true })
+    expect(checkinStatus('ms2', { ...NO_CHECKS, vision: true }).badges).toEqual({ week: true, full: false, vision: true })
   })
 })
 

@@ -7,6 +7,8 @@ export interface FindingText {
   what: string
   why: string
   action: string
+  /** Short ordered steps for the crisis card (critical-capable rules only). */
+  steps?: string[]
 }
 
 export const fmt = (template: string, params: Record<string, string | number> = {}) =>
@@ -20,6 +22,11 @@ export const METRIC_NAMES: Record<Lang, Record<MetricId, string>> = {
     pvtMs: 'Reaction time (PVT)',
     lymph: 'Lymphocytes',
     bodyMass: 'Body mass',
+    tempC: 'Body temperature',
+    glucose: 'Blood glucose (fasting)',
+    spo2: 'Blood oxygen (SpO₂)',
+    sysBp: 'Blood pressure (systolic)',
+    mskIndex: 'Bone & muscle index',
   },
   tr: {
     restHr: 'Dinlenik nabız',
@@ -28,6 +35,11 @@ export const METRIC_NAMES: Record<Lang, Record<MetricId, string>> = {
     pvtMs: 'Tepki süresi (PVT)',
     lymph: 'Lenfosit',
     bodyMass: 'Vücut kütlesi',
+    tempC: 'Vücut ısısı',
+    glucose: 'Kan şekeri (açlık)',
+    spo2: 'Kan oksijeni (SpO₂)',
+    sysBp: 'Tansiyon (sistolik)',
+    mskIndex: 'Kemik ve kas endeksi',
   },
 }
 
@@ -66,6 +78,11 @@ const METRIC_WHY: Record<Lang, Record<MetricId, string>> = {
     pvtMs: 'Slower reaction time is an early, objective sign of fatigue that people consistently under-report.',
     lymph: 'Spaceflight dysregulates immunity; falling lymphocytes raise infection and viral reactivation risk.',
     bodyMass: 'Unplanned mass loss in microgravity points to muscle/bone loss or insufficient nutrition.',
+    tempC: 'A temperature that leaves your own space pattern can be the first sign of infection, overheating or a suit/cabin cooling problem.',
+    glucose: 'Blood sugar drifting from your own pattern points to stress, sleep loss, less exercise or a change in eating.',
+    spo2: 'Falling blood oxygen means the body is not getting enough oxygen: a cabin air problem or a breathing problem.',
+    sysBp: 'Blood pressure moving away from your space pattern can signal dehydration, stress or the heart adapting poorly.',
+    mskIndex: 'Without gravity, bones and muscles weaken quickly; a faster-than-expected drop raises injury and fracture risk on landing.',
   },
   tr: {
     restHr: 'Beklenen sıvı kayması adaptasyonunun ötesinde yükselen dinlenik nabız; kondisyon kaybı, dehidrasyon ya da hastalık işareti olabilir.',
@@ -74,6 +91,11 @@ const METRIC_WHY: Record<Lang, Record<MetricId, string>> = {
     pvtMs: 'Yavaşlayan tepki süresi, insanların sürekli olduğundan az bildirdiği yorgunluğun erken ve nesnel işaretidir.',
     lymph: 'Uzay uçuşu bağışıklığı bozar; düşen lenfosit enfeksiyon ve virüs reaktivasyonu riskini artırır.',
     bodyMass: 'Mikro yerçekiminde plansız kütle kaybı kas/kemik kaybına ya da yetersiz beslenmeye işaret eder.',
+    tempC: 'Kendi uzay düzeninden çıkan vücut ısısı; enfeksiyonun, aşırı ısınmanın ya da giysi/kabin soğutma sorununun ilk işareti olabilir.',
+    glucose: 'Kendi düzeninden sapan kan şekeri; strese, uyku kaybına, azalan egzersize ya da beslenme değişikliğine işaret eder.',
+    spo2: 'Düşen kan oksijeni vücudun yeterli oksijen alamadığını gösterir: kabin havası ya da solunum sorunu.',
+    sysBp: 'Uzay düzeninden uzaklaşan tansiyon; dehidrasyon, stres ya da kalbin iyi uyum sağlayamadığının işareti olabilir.',
+    mskIndex: 'Yerçekimi olmadan kemik ve kaslar hızla zayıflar; beklenenden hızlı düşüş, inişte yaralanma ve kırık riskini artırır.',
   },
 }
 
@@ -85,6 +107,11 @@ const METRIC_ACTION: Record<Lang, Record<MetricId, string>> = {
     pvtMs: 'Onboard protocol: repeat the PVT after rest; postpone safety-critical tasks or use a buddy check.',
     lymph: 'Onboard protocol: repeat the blood count, review stress and sleep, inspect skin and mucosa.',
     bodyMass: 'Onboard protocol: review caloric intake and resistive exercise compliance.',
+    tempC: 'Onboard protocol: re-measure after 15 minutes of rest, check for other symptoms and cabin temperature, and log the result.',
+    glucose: 'Onboard protocol: repeat the fasting measurement tomorrow morning and log meals, sleep and exercise.',
+    spo2: 'Onboard protocol: re-seat the sensor and re-measure at rest; check cabin O₂ and CO₂ readings.',
+    sysBp: 'Onboard protocol: rest 5 minutes and re-measure, check fluid intake, and log the result.',
+    mskIndex: 'Onboard protocol: review resistive and treadmill exercise compliance and protein intake.',
   },
   tr: {
     restHr: 'Araç içi protokol: sıvı alımını kontrol et, dinlendikten sonra ölçümü tekrarla, egzersiz yükünü kaydet.',
@@ -93,6 +120,11 @@ const METRIC_ACTION: Record<Lang, Record<MetricId, string>> = {
     pvtMs: 'Araç içi protokol: dinlendikten sonra PVT’yi tekrarla; kritik görevleri ertele ya da ikinci kişi kontrolü kullan.',
     lymph: 'Araç içi protokol: kan sayımını tekrarla, stres ve uykuyu gözden geçir, cilt ve mukozayı kontrol et.',
     bodyMass: 'Araç içi protokol: kalori alımını ve dirençli egzersiz uyumunu gözden geçir.',
+    tempC: 'Araç içi protokol: 15 dakika dinlendikten sonra yeniden ölç, diğer belirtileri ve kabin sıcaklığını kontrol et, sonucu kaydet.',
+    glucose: 'Araç içi protokol: yarın sabah açlık ölçümünü tekrarla; öğünleri, uykuyu ve egzersizi kaydet.',
+    spo2: 'Araç içi protokol: sensörü yeniden yerleştir ve dinlenirken tekrar ölç; kabin O₂ ve CO₂ değerlerini kontrol et.',
+    sysBp: 'Araç içi protokol: 5 dakika dinlenip yeniden ölç, sıvı alımını kontrol et, sonucu kaydet.',
+    mskIndex: 'Araç içi protokol: dirençli egzersiz ve koşu bandı uyumunu ve protein alımını gözden geçir.',
   },
 }
 
@@ -146,6 +178,7 @@ const EN: Dict = {
     what: '{hits} of 3 factors are present: sleep debt {debt} h over 7 days, reaction time {pvt} ms (expected {pvtBase} ms), cabin CO₂ {co2} mmHg.',
     why: 'Sleep loss, slowed reactions and high CO₂ each dull thinking; together they multiply the chance of an operational error.',
     action: 'Onboard protocol: stand down from safety-critical tasks, hand over to a rested crewmate, restore CO₂ scrubbing and take a protected sleep period.',
+    steps: ['Stop safety-critical tasks and hand over to a rested crewmate.', 'Restore CO₂ scrubbing and move to fresher air.', 'Start a protected sleep period.'],
   },
   'rule.conflict': {
     title: 'Self-report contradicts measurements',
@@ -158,18 +191,21 @@ const EN: Dict = {
     what: 'A solar energetic particle event has started while this crew member is outside the vehicle.',
     why: 'A spacesuit gives almost no shielding; dose climbs quickly as high-energy protons arrive.',
     action: 'Onboard protocol: terminate EVA and ingress now, move to the storm shelter, start dosimetry logging.',
+    steps: ['End the EVA and get back inside now.', 'Go to the storm shelter.', 'Start dosimeter logging.'],
   },
   'rule.virus': {
     title: 'Latent virus reactivation suspected',
     what: '{hits} of 3 factors are present: sustained stress ({stress}/5), lymphocytes {lymph} (expected {lymphBase}) ×10⁹/L, skin rash.',
     why: 'Stress and immune suppression in flight reactivate latent herpes viruses (e.g. shingles); early treatment matters.',
     action: 'Onboard protocol: examine and photograph the rash, begin the antiviral protocol from the medical kit if confirmed, reduce workload.',
+    steps: ['Examine and photograph the rash.', 'Follow the medical-kit protocol with the crew medical officer.', 'Reduce workload and rest.'],
   },
   'rule.sans': {
     title: 'Vision change with elevated CO₂ (SANS)',
     what: 'A visual change was detected while cabin CO₂ is {co2} mmHg.',
     why: 'Headward fluid shift plus high CO₂ raises pressure on the optic nerve; untreated changes can persist after flight.',
     action: 'Onboard protocol: lower cabin CO₂, repeat Amsler and acuity tests per eye, schedule onboard eye imaging.',
+    steps: ['Lower cabin CO₂.', 'Repeat the Amsler and acuity test for each eye.', 'Schedule onboard eye imaging.'],
   },
 }
 
@@ -221,6 +257,7 @@ const TR: Dict = {
     what: '3 etkenden {hits} tanesi mevcut: 7 günde {debt} saat uyku borcu, tepki süresi {pvt} ms (beklenen {pvtBase} ms), kabin CO₂ {co2} mmHg.',
     why: 'Uyku kaybı, yavaşlayan tepki ve yüksek CO₂ tek tek düşünmeyi köreltir; birlikte operasyonel hata olasılığını katlar.',
     action: 'Araç içi protokol: kritik görevlerden çekil, dinlenmiş bir mürettebata devret, CO₂ temizlemeyi düzelt ve korunmuş bir uyku dönemi al.',
+    steps: ['Kritik görevleri bırak ve dinlenmiş bir mürettebata devret.', 'CO₂ temizlemeyi düzelt, daha temiz havaya geç.', 'Korunmuş bir uyku dönemine başla.'],
   },
   'rule.conflict': {
     title: 'Beyan ile ölçüm çelişiyor',
@@ -233,18 +270,21 @@ const TR: Dict = {
     what: 'Bu mürettebat araç dışındayken bir güneş enerjik parçacık olayı başladı.',
     why: 'Uzay giysisi neredeyse hiç zırh sağlamaz; yüksek enerjili protonlar geldikçe doz hızla artar.',
     action: 'Araç içi protokol: EVA’yı hemen sonlandır ve içeri gir, fırtına sığınağına geç, dozimetri kaydını başlat.',
+    steps: ['EVA’yı bitir ve hemen içeri gir.', 'Fırtına sığınağına geç.', 'Dozimetre kaydını başlat.'],
   },
   'rule.virus': {
     title: 'Gizli virüs reaktivasyonu şüphesi',
     what: '3 etkenden {hits} tanesi mevcut: süregelen stres ({stress}/5), lenfosit {lymph} (beklenen {lymphBase}) ×10⁹/L, cilt döküntüsü.',
     why: 'Uçuşta stres ve bağışıklık baskılanması gizli herpes virüslerini (ör. zona) yeniden etkinleştirir; erken tedavi önemlidir.',
     action: 'Araç içi protokol: döküntüyü incele ve fotoğrafla, doğrulanırsa tıbbi kitteki antiviral protokolü başlat, iş yükünü azalt.',
+    steps: ['Döküntüyü incele ve fotoğrafla.', 'Mürettebat sağlık sorumlusuyla tıbbi kit protokolünü uygula.', 'İş yükünü azalt ve dinlen.'],
   },
   'rule.sans': {
     title: 'Yüksek CO₂ ile görme değişikliği (SANS)',
     what: 'Kabin CO₂ {co2} mmHg iken görme değişikliği saptandı.',
     why: 'Başa doğru sıvı kayması ve yüksek CO₂ optik sinir üzerindeki basıncı artırır; tedavi edilmeyen değişiklikler uçuştan sonra kalıcı olabilir.',
     action: 'Araç içi protokol: kabin CO₂’sini düşür, her göz için Amsler ve keskinlik testini tekrarla, araç içi göz görüntülemesi planla.',
+    steps: ['Kabin CO₂’sini düşür.', 'Her göz için Amsler ve keskinlik testini tekrarla.', 'Araç içi göz görüntülemesi planla.'],
   },
 }
 
@@ -268,5 +308,6 @@ export function findingText(f: Finding, lang: Lang): FindingText {
     what: fmt(t.what, f.params),
     why: fmt(t.why, f.params),
     action: fmt(t.action, f.params),
+    steps: t.steps,
   }
 }

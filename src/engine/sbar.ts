@@ -48,6 +48,10 @@ export interface ReportPayload {
     hrv: number
     sleepH: number
     lymph: number
+    tempC: number
+    glucose: number
+    spo2: number
+    sysBp: number
     co2: number
     cumulativeDoseMsv: number
   }
@@ -89,6 +93,10 @@ export function buildPayload(
       hrv: a.record.hrv,
       sleepH: a.record.sleepH,
       lymph: a.record.lymph,
+      tempC: a.record.tempC,
+      glucose: a.record.glucose,
+      spo2: a.record.spo2,
+      sysBp: a.record.sysBp,
       co2: Math.round(a.co2Avg3 * 10) / 10,
       cumulativeDoseMsv: Math.round(a.cumulativeDoseMsv),
     },

@@ -27,7 +27,7 @@ import {
 import { useI18n } from '../../i18n'
 import type { Sourced } from '../../services/http'
 import { useMission } from '../../state/mission'
-import { AXIS_TICK, PageHeader, Pill, SimBadge, SourceBadge, usePrefersReducedMotion } from './ui'
+import { AXIS_TICK, InfoButton, PageHeader, Pill, SimBadge, SimulatedBadge, SourceBadge, usePrefersReducedMotion } from './ui'
 
 const hhmm = (iso: string) => iso.slice(11, 16)
 
@@ -180,7 +180,10 @@ export function RadiationContent() {
 
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <article className="flex min-h-37.5 flex-col justify-between rounded-2xl border p-4">
-          <p className="text-sm font-medium tracking-tight">{t('rad.today')}</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium tracking-tight">{t('rad.today')}</p>
+            <SimulatedBadge />
+          </div>
           <div className="flex flex-col gap-2">
             <p className="leading-none">
               <span className="text-2.5xl font-medium tabular-nums">{todayDose.toFixed(2)}</span> <span className="font-normal">mSv</span>
@@ -191,7 +194,13 @@ export function RadiationContent() {
           </div>
         </article>
         <article className="flex min-h-37.5 flex-col justify-between rounded-2xl border p-4">
-          <p className="text-sm font-medium tracking-tight">{t('rad.cumulative')}</p>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1">
+              <p className="text-sm font-medium tracking-tight">{t('rad.cumulative')}</p>
+              <InfoButton id="dose" name={t('metric.dose')} />
+            </div>
+            <SimulatedBadge />
+          </div>
           <div className="flex flex-col gap-2">
             <p className="leading-none">
               <span className="text-2.5xl font-medium tabular-nums">{current.cumulativeDoseMsv.toFixed(1)}</span> <span className="font-normal">mSv</span>

@@ -38,9 +38,13 @@ import {
   Pill,
   SimBadge,
   SourceBadge,
+  InfoButton,
+  SimulatedBadge,
   tierLevel,
   usePrefersReducedMotion,
 } from './ui'
+import { BodyMap } from './body-map'
+import type { InfoId } from '../../i18n/info'
 
 export const SCENARIOS: ScenarioId[] = ['nominal', 'hidden', 'storm', 'immune']
 
@@ -122,8 +126,8 @@ export function CrewContent() {
     .map((id) => current.metrics[id])
     .find((m) => m.twinAlarmDay !== null)
 
-  const vitals: Array<{ id: string; label: string; value: string; level: Level }> = [
-    ...(['restHr', 'hrv', 'sleepH', 'pvtMs', 'lymph'] as const).map((id) => {
+  const vitals: Array<{ id: InfoId; label: string; value: string; level: Level }> = [
+    ...(['restHr', 'sysBp', 'spo2', 'tempC', 'glucose', 'hrv', 'sleepH', 'pvtMs', 'lymph'] as const).map((id) => {
       const m = current.metrics[id]
       return {
         id,
@@ -207,7 +211,10 @@ export function CrewContent() {
 
       <section className="flex flex-col gap-3.5">
         <div className="flex flex-col gap-2">
-          <h2 className="text-lg font-medium">{t('crew.section')}</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-medium">{t('crew.section')}</h2>
+            <SimulatedBadge />
+          </div>
           <p className="text-sm text-muted-foreground">{t('crew.sectionSub')}</p>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -249,9 +256,14 @@ export function CrewContent() {
         </div>
       </section>
 
+      <BodyMap assessment={current} />
+
       <section className="flex flex-col gap-3.5">
         <div className="flex flex-col gap-2">
-          <h2 className="text-lg font-medium">{t('hazards.title')}</h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-medium">{t('hazards.title')}</h2>
+            <SimulatedBadge />
+          </div>
           <p className="text-sm text-muted-foreground">{t('hazards.sub')}</p>
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -295,7 +307,10 @@ export function CrewContent() {
               </span>
               <h3 className="font-medium">{t('compound.title')}</h3>
             </div>
-            <InsightBadge>{t('compound.badge')}</InsightBadge>
+            <div className="flex flex-wrap items-center gap-2">
+              <SimulatedBadge className="bg-background" />
+              <InsightBadge>{t('compound.badge')}</InsightBadge>
+            </div>
           </div>
           <div className="flex flex-1 flex-col gap-2">
             {shownFindings.length === 0 ? (
@@ -332,12 +347,18 @@ export function CrewContent() {
               </span>
               <h3 className="font-medium">{t('vitals.title')}</h3>
             </div>
-            <InsightBadge>{t('vitals.badge', { day: current.day })}</InsightBadge>
+            <div className="flex flex-wrap items-center gap-2">
+              <SimulatedBadge className="bg-background" />
+              <InsightBadge>{t('vitals.badge', { day: current.day })}</InsightBadge>
+            </div>
           </div>
           <div className="flex flex-1 flex-col justify-between rounded-xl bg-background p-3">
             {vitals.map((v) => (
-              <div key={v.id} className="flex items-center justify-between gap-3 py-1.5">
-                <p className="text-muted-foreground">{v.label}</p>
+              <div key={v.id} className="flex items-center justify-between gap-3 py-1">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <p className="truncate text-muted-foreground">{v.label}</p>
+                  <InfoButton id={v.id} name={v.label} />
+                </div>
                 <p className={cn('shrink-0 font-semibold', v.level === 'nominal' ? 'text-(--vital-good)' : levelText[v.level])}>
                   {v.value}
                 </p>

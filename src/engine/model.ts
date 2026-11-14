@@ -27,7 +27,7 @@ export interface MetricDef {
   /** Layer 1: Earth clinical reference range. */
   earth: [number, number]
   /** Which direction is unhealthy. */
-  bad: 'high' | 'low'
+  bad: 'high' | 'low' | 'both'
   /** Minimum sd used for z-scores (sensor / day-to-day noise floor). */
   sdFloor: number
   /**
@@ -109,6 +109,62 @@ export const METRICS: Record<MetricId, MetricDef> = {
     behavioral: false,
     digits: 1,
   },
+  // --- Added for the challenge's core vital signs. Modeled assumptions. ---
+  tempC: {
+    id: 'tempC',
+    unit: '°C',
+    earth: [36.1, 37.5],
+    bad: 'both',
+    sdFloor: 0.15,
+    adapt: (d) => 0.2 * sat(d, 30),
+    hazard: 'environment',
+    behavioral: false,
+    digits: 1,
+  },
+  glucose: {
+    id: 'glucose',
+    unit: 'mg/dL',
+    earth: [70, 100],
+    bad: 'both',
+    sdFloor: 4,
+    adapt: (d) => 3 * sat(d, 40),
+    hazard: 'gravity',
+    behavioral: false,
+    digits: 0,
+  },
+  spo2: {
+    id: 'spo2',
+    unit: '%',
+    earth: [95, 100],
+    bad: 'low',
+    sdFloor: 0.7,
+    adapt: () => 0,
+    hazard: 'environment',
+    behavioral: false,
+    digits: 0,
+  },
+  sysBp: {
+    id: 'sysBp',
+    unit: 'mmHg',
+    earth: [90, 130],
+    bad: 'both',
+    sdFloor: 4,
+    adapt: (d) => -4 * sat(d, 20),
+    hazard: 'gravity',
+    behavioral: false,
+    digits: 0,
+  },
+  mskIndex: {
+    id: 'mskIndex',
+    unit: 'idx',
+    earth: [0, 999], // no Earth range: index is relative to the person's pre-flight self
+    bad: 'low',
+    sdFloor: 1.2,
+    adapt: (d) => -4 * sat(d, 60),
+    hazard: 'gravity',
+    behavioral: false,
+    digits: 0,
+  },
 }
 
 export const METRIC_IDS = Object.keys(METRICS) as MetricId[]
@@ -158,6 +214,8 @@ interface Person {
   role: { en: string; tr: string }
   age: number
   base: { restHr: number; hrv: number; sleepH: number; pvtMs: number; lymph: number; bodyMass: number }
+  /** Baselines for the vital signs added later (kept separate so the original series are unchanged). */
+  vitals: { tempC: number; glucose: number; spo2: number; sysBp: number; mskIndex: number }
 }
 
 // Fictional crew. Any resemblance to real astronauts is unintended.
@@ -168,6 +226,7 @@ const PEOPLE: Person[] = [
     role: { en: 'Commander', tr: 'Komutan' },
     age: 44,
     base: { restHr: 58, hrv: 66, sleepH: 7.3, pvtMs: 245, lymph: 2.1, bodyMass: 64 },
+    vitals: { tempC: 36.7, glucose: 86, spo2: 98, sysBp: 112, mskIndex: 100 },
   },
   {
     id: 'plt',
@@ -175,6 +234,7 @@ const PEOPLE: Person[] = [
     role: { en: 'Pilot', tr: 'Pilot' },
     age: 39,
     base: { restHr: 61, hrv: 62, sleepH: 7.2, pvtMs: 250, lymph: 1.9, bodyMass: 76 },
+    vitals: { tempC: 36.6, glucose: 90, spo2: 98, sysBp: 118, mskIndex: 100 },
   },
   {
     id: 'ms1',
@@ -182,6 +242,7 @@ const PEOPLE: Person[] = [
     role: { en: 'Mission Specialist', tr: 'Görev Uzmanı' },
     age: 36,
     base: { restHr: 56, hrv: 71, sleepH: 7.5, pvtMs: 238, lymph: 1.85, bodyMass: 81 },
+    vitals: { tempC: 36.8, glucose: 88, spo2: 97, sysBp: 121, mskIndex: 100 },
   },
   {
     id: 'ms2',
@@ -189,6 +250,7 @@ const PEOPLE: Person[] = [
     role: { en: 'Flight Engineer', tr: 'Uçuş Mühendisi' },
     age: 41,
     base: { restHr: 60, hrv: 59, sleepH: 7.0, pvtMs: 256, lymph: 2.3, bodyMass: 68 },
+    vitals: { tempC: 36.7, glucose: 84, spo2: 98, sysBp: 114, mskIndex: 100 },
   },
 ]
 
@@ -232,11 +294,13 @@ export function buildMission(
 
   const crew: CrewMember[] = PEOPLE.map((p, idx) => {
     const rand = mulberry32(SCENARIO_SEED[scenario] * 1000 + idx * 97 + 5)
+    // Separate stream for the later-added vitals: the original series stay bit-identical.
+    const rand2 = mulberry32(SCENARIO_SEED[scenario] * 3331 + idx * 53 + 9)
     const isFocus = p.id === focusId
     const days: DayRecord[] = []
     for (let day = 1; day <= today; day++) {
       const drift = Math.max(0, day - BASELINE_DAYS) // days since the baseline window closed
-      const m = (id: MetricId, noise: number) =>
+      const m = (id: keyof Person['base'], noise: number) =>
         p.base[id] + METRICS[id].adapt(day, p.base[id]) + noise * gaussian(rand)
 
       let restHr = m('restHr', 1.6)
@@ -245,6 +309,13 @@ export function buildMission(
       let pvtMs = m('pvtMs', 5.5)
       let lymph = m('lymph', 0.08)
       const bodyMass = m('bodyMass', 0.25)
+      const v = (id: keyof Person['vitals'], noise: number) =>
+        p.vitals[id] + METRICS[id].adapt(day, p.vitals[id]) + noise * gaussian(rand2)
+      let tempC = v('tempC', 0.1)
+      let glucose = v('glucose', 2.8)
+      const spo2 = v('spo2', 0.45)
+      let sysBp = v('sysBp', 2.8)
+      let mskIndex = v('mskIndex', 0.8)
       let mood = 4
       let stress = 2
       let feelsFine = true
@@ -264,6 +335,10 @@ export function buildMission(
         restHr += 0.35 * drift
         exerciseMin -= 1.2 * drift
         headache = day >= 37
+        // Sleep loss and less exercise show up metabolically too.
+        glucose += 0.5 * drift
+        sysBp += 0.3 * drift
+        mskIndex -= 0.18 * drift
       }
 
       if (scenario === 'immune' && isFocus) {
@@ -274,6 +349,8 @@ export function buildMission(
           sleepH -= 0.4
         }
         rash = day >= 37
+        // Low-grade temperature rise ahead of the rash.
+        if (day >= 33) tempC += 0.11 * (day - 32)
         feelsFine = day < 37
       }
 
@@ -291,6 +368,11 @@ export function buildMission(
         pvtMs: round(pvtMs, 0),
         lymph: round(Math.max(0.3, lymph), 2),
         bodyMass: round(bodyMass, 1),
+        tempC: round(tempC, 1),
+        glucose: round(glucose, 0),
+        spo2: Math.min(100, round(spo2, 0)),
+        sysBp: round(sysBp, 0),
+        mskIndex: round(mskIndex, 0),
         exerciseMin: round(Math.max(20, exerciseMin), 0),
         co2: co2ByDay[day - 1],
         doseMsv: round(doseMsv, 2),

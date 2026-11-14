@@ -54,6 +54,20 @@
   }
 }
 
+/* Body map: hovered, focused and selected areas get a clear outline. */
+.body-region > * {
+  transition: fill-opacity 150ms ease, stroke-width 150ms ease;
+}
+.body-region:hover > *,
+.body-region-active > * {
+  fill-opacity: 0.85;
+  stroke-width: 3;
+}
+.body-region:focus-visible > * {
+  stroke: var(--ring);
+  stroke-width: 4;
+}
+
 /* Accessibility: respect the user's reduced-motion preference. */
 @media (prefers-reduced-motion: reduce) {
   *,

@@ -18,6 +18,8 @@ import {
   auToDelaySec,
   buildMission,
   buildPayload,
+  checkinStatus,
+  NO_CHECKS,
   earthMarsDistanceAu,
   FIXED_DELAY_SEC,
   isSepActive,
@@ -25,6 +27,9 @@ import {
   templateSbar,
   worstTier,
   type Assessment,
+  type CheckinDone,
+  type CheckinStatus,
+  type CheckKind,
   type DayRecord,
   type Lang,
   type Mission,
@@ -80,8 +85,9 @@ interface MissionState {
   stormClock: string
   setStormClock: (iso: string) => void
   refreshSpaceWeather: () => void
-  submitCheck: (crewId: string, patch: Partial<DayRecord>) => void
-  hasCheck: (crewId: string) => boolean
+  submitCheck: (crewId: string, patch: Partial<DayRecord>, kind: CheckKind) => void
+  /** Checks completed today by this crew member (drives the streak and badges). */
+  checkinFor: (crewId: string) => CheckinStatus
   reports: Report[]
   sendReport: (r: Omit<Report, 'id' | 'sentAt' | 'delaySec'>) => void
   fastForward: boolean
@@ -112,6 +118,7 @@ export function MissionProvider({ children }: { children: ReactNode }) {
     readJson('astrotwin:privacy', { shareBehavioral: false }),
   )
   const [checks, setChecks] = useState<Record<string, Partial<DayRecord>>>({})
+  const [done, setDone] = useState<Record<string, CheckinDone>>({})
   const [stormClock, setStormClock] = useState(DEFAULT_STORM_CLOCK)
   const [reports, setReports] = useState<Report[]>([])
   const [fastForward, setFastForward] = useState(false)
@@ -177,16 +184,16 @@ export function MissionProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const submitCheck = useCallback(
-    (crewId: string, patch: Partial<DayRecord>) =>
-      setChecks((prev) => {
-        const key = `${scenario}:${crewId}`
-        return { ...prev, [key]: { ...prev[key], ...patch } }
-      }),
+    (crewId: string, patch: Partial<DayRecord>, kind: CheckKind) => {
+      const key = `${scenario}:${crewId}`
+      setChecks((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))
+      setDone((prev) => ({ ...prev, [key]: { ...NO_CHECKS, ...prev[key], [kind]: true } }))
+    },
     [scenario],
   )
-  const hasCheck = useCallback(
-    (crewId: string) => Boolean(checks[`${scenario}:${crewId}`]),
-    [checks, scenario],
+  const checkinFor = useCallback(
+    (crewId: string) => checkinStatus(crewId, done[`${scenario}:${crewId}`] ?? NO_CHECKS),
+    [done, scenario],
   )
 
   const delayRef = useRef(delaySec)
@@ -260,7 +267,7 @@ export function MissionProvider({ children }: { children: ReactNode }) {
     setStormClock,
     refreshSpaceWeather,
     submitCheck,
-    hasCheck,
+    checkinFor,
     reports,
     sendReport,
     fastForward,
