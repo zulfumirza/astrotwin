@@ -237,7 +237,7 @@ export function RadiationContent() {
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <article className="flex flex-col gap-4 rounded-2xl border bg-background p-4 xl:col-span-2">
+        <article className="flex flex-col gap-4 rounded-2xl border bg-background p-4 xl:col-span-2" data-tour="radiation">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
             <div className="flex items-center gap-3">
               <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-(--chart-sleep) text-white">

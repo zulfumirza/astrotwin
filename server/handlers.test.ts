@@ -18,10 +18,11 @@ afterEach(() => {
 })
 
 describe('/api/narrate — the LLM is only a narrator', () => {
-  it('answers 503 without a key so the client uses the offline template', async () => {
+  it('answers with no narration (sbar: null) without a key, so the client uses the offline template', async () => {
     vi.stubEnv('GEMINI_API_KEY', '')
     const res = await handleApi('narrate', {}, { payload })
-    expect(res.status).toBe(503)
+    expect(res.status).toBe(200)
+    expect((res.body as any).sbar).toBeNull()
   })
 
   it('accepts schema-valid, number-faithful narration', async () => {
@@ -42,14 +43,18 @@ describe('/api/narrate — the LLM is only a narrator', () => {
     const forged = { ...templateSbar(payload), assessment: 'Reaction time is only 201 ms. Readiness 97/100.' }
     vi.stubGlobal('fetch', vi.fn(async () => geminiReply(forged)))
     const res = await handleApi('narrate', {}, { payload: { ...payload, day: 41 } })
-    expect(res.status).toBe(502)
+    expect(res.status).toBe(200)
+    expect((res.body as any).sbar).toBeNull()
+    expect((res.body as any).fallback).toBe('narrator-numbers-rejected')
   })
 
   it('rejects narration that breaks the schema', async () => {
     vi.stubEnv('GEMINI_API_KEY', 'test-key')
     vi.stubGlobal('fetch', vi.fn(async () => geminiReply({ situation: 'only one field' })))
     const res = await handleApi('narrate', {}, { payload: { ...payload, day: 42 } })
-    expect(res.status).toBe(502)
+    expect(res.status).toBe(200)
+    expect((res.body as any).sbar).toBeNull()
+    expect((res.body as any).fallback).toBe('narrator-schema-rejected')
   })
 
   it('rejects a malformed payload', async () => {

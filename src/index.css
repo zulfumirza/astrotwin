@@ -44,6 +44,11 @@
   * {
     @apply border-border;
   }
+  /* Whole-UI scale: the design is rem-based, so 87.5% (14 px) shrinks every
+     size proportionally. Vision-test optotypes use real mm → px and are unaffected. */
+  html {
+    font-size: 87.5%;
+  }
   body {
     @apply bg-background text-foreground font-sans antialiased;
   }

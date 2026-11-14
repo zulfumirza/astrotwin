@@ -207,7 +207,7 @@ describe('daily check-in streak (gentle gamification)', () => {
   it('awards the three badges from what was actually done', () => {
     const none = checkinStatus('plt', NO_CHECKS).badges
     expect(none).toEqual({ week: false, full: false, vision: false })
-    const all = checkinStatus('cdr', { pvt: true, self: true, vision: true }).badges
+    const all = checkinStatus('cdr', { ...NO_CHECKS, pvt: true, self: true, vision: true }).badges
     expect(all).toEqual({ week: true, full: true, vision: true })
     expect(checkinStatus('ms2', { ...NO_CHECKS, vision: true }).badges).toEqual({ week: true, full: false, vision: true })
   })

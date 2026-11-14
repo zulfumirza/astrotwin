@@ -1,4 +1,10 @@
-import { ExternalLinkIcon } from 'lucide-react'
+import { useState } from 'react'
+import { CompassIcon, ExternalLinkIcon } from 'lucide-react'
+import { useDashboardNavigation } from '../bionis/navigation'
+import { vt } from '../../i18n/vision'
+import { loadCalibration, loadFullDaily, saveCalibration, saveFullDaily } from '../../services/vision-store'
+import { CalibrationPanel } from './vision-check'
+import { startTour } from './tour'
 import { useTheme } from '../bionis/theme-provider'
 import { Button } from '@/components/ui/button'
 import { formatDelay, type Lang, type MissionProfileId } from '../../engine'
@@ -23,6 +29,10 @@ const PROFILES: MissionProfileId[] = ['leo', 'moon', 'mars']
 
 export function SettingsContent() {
   const { t, lang, setLang } = useI18n()
+  const { navigate } = useDashboardNavigation()
+  const [fullDaily, setFullDaily] = useState(loadFullDaily)
+  const [cal, setCal] = useState(loadCalibration)
+  const [calOpen, setCalOpen] = useState(false)
   const { theme, setTheme } = useTheme()
   const { profile, setProfile, delaySec, marsRange, privacy, setPrivacy, protons, recentEvents, gleEvents } = useMission()
 
@@ -117,6 +127,55 @@ export function SettingsContent() {
           ))}
           <p className="text-sm font-medium">{t('motto')}</p>
           <p className="text-xs leading-relaxed text-muted-foreground">{t('settings.disclaimer')}</p>
+        </article>
+
+        <article className="flex flex-col gap-4 rounded-2xl border bg-background p-5">
+          <h2 className="text-lg font-medium">{vt(lang, 'settingsTitle')}</h2>
+          <Toggle
+            checked={fullDaily}
+            onChange={(v) => {
+              setFullDaily(v)
+              saveFullDaily(v)
+            }}
+            label={vt(lang, 'settingsDaily')}
+            description={vt(lang, 'settingsDailySub')}
+          />
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-muted/60 p-3">
+            <div>
+              <p className="text-sm font-medium">{vt(lang, 'settingsCal')}</p>
+              <p className="text-xs text-muted-foreground">
+                {cal ? `${vt(lang, 'calDone', { ppm: cal.pxPerMm.toFixed(2) })} · ${vt(lang, cal.mode === 'phone40' ? 'distPhone' : 'distLaptop')}` : vt(lang, 'settingsNotCal')}
+              </p>
+            </div>
+            <Button type="button" variant="outline" aria-expanded={calOpen} onClick={() => setCalOpen((v) => !v)}>
+              {vt(lang, 'calAgain')}
+            </Button>
+          </div>
+          {calOpen ? (
+            <CalibrationPanel
+              initial={cal}
+              onDone={(c) => {
+                saveCalibration(c)
+                setCal(c)
+                setCalOpen(false)
+              }}
+            />
+          ) : null}
+          <p className="text-xs text-muted-foreground">{vt(lang, 'screening')}</p>
+        </article>
+
+        <article className="flex flex-col gap-4 rounded-2xl border bg-background p-5">
+          <h2 className="text-lg font-medium">{t('tour.settingsTitle')}</h2>
+          <p className="text-sm text-muted-foreground">{t('tour.settingsSub')}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" onClick={() => startTour(navigate)}>
+              <CompassIcon />
+              {t('tour.start')}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => navigate('/help')}>
+              {t('nav.help')}
+            </Button>
+          </div>
         </article>
 
         <article className="flex flex-col gap-4 rounded-2xl border bg-background p-5">

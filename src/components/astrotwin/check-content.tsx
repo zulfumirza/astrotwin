@@ -1,11 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
-import { AwardIcon, ClipboardCheckIcon, EyeIcon, FlameIcon, TimerIcon } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { AwardIcon, BrainIcon, CheckIcon, ClipboardCheckIcon, EyeIcon, FlameIcon, MessageSquareTextIcon, PlayIcon, TimerIcon, TrafficConeIcon, XIcon } from 'lucide-react'
+import { DigitSpanCard, GoNoGoCard, NoteCard } from './daily-tests'
+import { dt } from '../../i18n/daily'
 import { useDashboardNavigation } from '../bionis/navigation'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useI18n } from '../../i18n'
 import { TIER_NAMES } from '../../i18n/findings'
 import { useMission } from '../../state/mission'
+import { needsFullAcuity } from '../../engine'
+import { vt, type VisionKey } from '../../i18n/vision'
+import { loadCrewVision, loadFullDaily } from '../../services/vision-store'
+import { VisionCheckFlow } from './vision-check'
 import { CardTitle, InfoButton, PageHeader, Pill, Segmented, SimBadge, SimulatedBadge, tierLevel } from './ui'
 
 const PVT_TRIALS = 5
@@ -134,102 +140,10 @@ function PvtCard() {
   )
 }
 
-const GRID = 20
-const CELL = 14
-
-/** Amsler grid vision self-test: mark the areas that look wavy, blurred or missing. */
-function AmslerCard() {
-  const { t } = useI18n()
-  const { current, submitCheck } = useMission()
-  const [marked, setMarked] = useState<Set<string>>(new Set())
-  const [manual, setManual] = useState(false)
-  const [saved, setSaved] = useState<boolean | null>(null)
-
-  const toggle = (key: string) => {
-    setSaved(null)
-    setMarked((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
-  }
-  const abnormal = marked.size > 0 || manual
-  const save = () => {
-    submitCheck(current.crewId, { visionChange: abnormal }, 'vision')
-    setSaved(abnormal)
-  }
-  const size = GRID * CELL
-
-  return (
-    <article className="flex flex-col gap-5 rounded-2xl border bg-[linear-gradient(180deg,rgb(20_184_166/0.08)_0%,transparent_42%)] p-5">
-      <CardTitle icon={EyeIcon} color="var(--insight-actions)" right={<InfoButton id="vision" name={t('metric.vision')} />}>
-        {t('amsler.title')}
-      </CardTitle>
-      <p className="text-sm leading-relaxed text-muted-foreground">{t('amsler.help')}</p>
-      <div className="flex justify-center rounded-xl bg-white p-3">
-        <svg
-          viewBox={`0 0 ${size} ${size}`}
-          className="aspect-square w-full max-w-72 cursor-crosshair"
-          role="img"
-          aria-label={t('amsler.aria')}
-          onClick={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect()
-            const x = Math.floor(((e.clientX - rect.left) / rect.width) * GRID)
-            const y = Math.floor(((e.clientY - rect.top) / rect.height) * GRID)
-            if (x >= 0 && y >= 0 && x < GRID && y < GRID) toggle(`${x}-${y}`)
-          }}
-        >
-          {[...marked].map((key) => {
-            const [x, y] = key.split('-').map(Number)
-            return <rect key={key} x={x * CELL} y={y * CELL} width={CELL} height={CELL} fill="#ef4444" fillOpacity={0.45} />
-          })}
-          {Array.from({ length: GRID + 1 }, (_, i) => (
-            <g key={i} stroke="#0f172a" strokeWidth={0.6}>
-              <line x1={i * CELL} y1={0} x2={i * CELL} y2={size} />
-              <line x1={0} y1={i * CELL} x2={size} y2={i * CELL} />
-            </g>
-          ))}
-          <circle cx={size / 2} cy={size / 2} r={3} fill="#0f172a" />
-        </svg>
-      </div>
-      <label className="flex cursor-pointer items-center gap-2.5 text-sm">
-        <input
-          type="checkbox"
-          checked={manual}
-          onChange={(e) => {
-            setManual(e.target.checked)
-            setSaved(null)
-          }}
-          className="size-4 accent-(--bionis-blue)"
-        />
-        {t('amsler.manual')}
-      </label>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" onClick={save}>
-          {t('amsler.save')}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setMarked(new Set())
-            setManual(false)
-            setSaved(null)
-          }}
-        >
-          {t('amsler.clear')}
-        </Button>
-        <span className="text-sm font-medium" role="status">
-          {saved === null ? '' : saved ? t('amsler.abnormal') : t('amsler.normal')}
-        </span>
-      </div>
-    </article>
-  )
-}
 
 function SelfReportCard() {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
+  const [q, setQ] = useState(0)
   const { current, submitCheck } = useMission()
   const r = current.record
   const [mood, setMood] = useState(r.mood)
@@ -238,6 +152,7 @@ function SelfReportCard() {
   const [feelsFine, setFeelsFine] = useState(r.feelsFine)
   const [headache, setHeadache] = useState(r.headache)
   const [rash, setRash] = useState(r.rash)
+  const [eye, setEye] = useState(Boolean(r.eyeSymptom))
   const [saved, setSaved] = useState(false)
 
   // Re-seed the form when another crew member or scenario is selected.
@@ -248,6 +163,7 @@ function SelfReportCard() {
     setFeelsFine(r.feelsFine)
     setHeadache(r.headache)
     setRash(r.rash)
+    setEye(Boolean(r.eyeSymptom))
     setSaved(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current.crewId, current.day])
@@ -255,8 +171,12 @@ function SelfReportCard() {
   const scale = [1, 2, 3, 4, 5].map((v) => ({ value: v, label: String(v) }))
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (q < 3) {
+      setQ((n) => n + 1)
+      return
+    }
     const hours = Math.min(14, Math.max(0, Number(sleepH) || 0))
-    submitCheck(current.crewId, { mood, stress, sleepH: hours, feelsFine, headache, rash }, 'self')
+    submitCheck(current.crewId, { mood, stress, sleepH: hours, feelsFine, headache, rash, eyeSymptom: eye }, 'self')
     setSaved(true)
   }
   const checkbox = (label: string, checked: boolean, set: (v: boolean) => void) => (
@@ -266,39 +186,72 @@ function SelfReportCard() {
     </label>
   )
 
+  const total = 4
+  const last = q === total - 1
   return (
     <form onSubmit={submit} className="flex flex-col gap-5 rounded-2xl border bg-background p-5">
       <CardTitle icon={ClipboardCheckIcon} color="var(--bionis-blue)" right={<InfoButton id="mood" name={t('metric.mood')} />}>
         {t('check.form')}
       </CardTitle>
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium">{t('check.mood')}</span>
-        <Segmented value={mood} options={scale} onChange={setMood} label={t('check.mood')} />
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-muted-foreground tabular-nums">{dt(lang, 'qOf', { n: q + 1, total })}</span>
+        <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+          <div className="h-full rounded-full bg-(--bionis-blue) transition-all" style={{ width: `${((q + 1) / total) * 100}%` }} />
+        </div>
       </div>
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium">{t('check.stress')}</span>
-        <Segmented value={stress} options={scale} onChange={setStress} label={t('check.stress')} />
+      <div className="min-h-40" aria-live="polite">
+        {q === 0 ? (
+          <div className="flex flex-col gap-3">
+            <span className="text-lg font-medium">{t('check.mood')}</span>
+            <Segmented value={mood} options={scale} onChange={setMood} label={t('check.mood')} />
+          </div>
+        ) : null}
+        {q === 1 ? (
+          <div className="flex flex-col gap-3">
+            <span className="text-lg font-medium">{t('check.stress')}</span>
+            <Segmented value={stress} options={scale} onChange={setStress} label={t('check.stress')} />
+          </div>
+        ) : null}
+        {q === 2 ? (
+          <label className="flex flex-col gap-3">
+            <span className="flex items-center gap-1.5 text-lg font-medium">
+              {t('check.sleep')}
+              <InfoButton id="sleepH" name={t('metric.sleepH')} />
+            </span>
+            <input
+              type="number"
+              // any decimal: recorded values like 4.7 h must not fail form validation
+              step="any"
+              inputMode="decimal"
+              min="0"
+              max="14"
+              value={sleepH}
+              onChange={(e) => setSleepH(e.target.value)}
+              className="h-12 w-40 rounded-xl border bg-background px-3 text-lg outline-none focus:ring-2 focus:ring-ring"
+            />
+          </label>
+        ) : null}
+        {q === 3 ? (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-3 text-lg font-medium">{t('check.symptoms')}</legend>
+            {checkbox(t('check.fine'), feelsFine, setFeelsFine)}
+            {checkbox(t('check.headache'), headache, setHeadache)}
+            {checkbox(t('check.rash'), rash, setRash)}
+            {checkbox(t('check.eye'), eye, setEye)}
+          </fieldset>
+        ) : null}
       </div>
-      <label className="flex flex-col gap-1.5 text-sm">
-        <span className="flex items-center gap-1.5 font-medium">{t('check.sleep')}<InfoButton id="sleepH" name={t('metric.sleepH')} /></span>
-        <input
-          type="number"
-          step="0.5"
-          min="0"
-          max="14"
-          value={sleepH}
-          onChange={(e) => setSleepH(e.target.value)}
-          className="h-10 rounded-lg border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-        />
-      </label>
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-medium">{t('check.symptoms')}</legend>
-        {checkbox(t('check.fine'), feelsFine, setFeelsFine)}
-        {checkbox(t('check.headache'), headache, setHeadache)}
-        {checkbox(t('check.rash'), rash, setRash)}
-      </fieldset>
-      <div className="flex items-center gap-3">
-        <Button type="submit">{t('check.save')}</Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="button" variant="outline" disabled={q === 0} onClick={() => setQ((n) => Math.max(0, n - 1))}>
+          {dt(lang, 'qPrev')}
+        </Button>
+        {last ? (
+          <Button type="submit">{t('check.save')}</Button>
+        ) : (
+          <Button type="button" onClick={() => setQ((n) => Math.min(total - 1, n + 1))}>
+            {dt(lang, 'qNext')}
+          </Button>
+        )}
         <span className="text-sm font-medium text-(--live)" role="status">
           {saved ? t('check.saved') : ''}
         </span>
@@ -361,10 +314,236 @@ function StreakCard() {
   )
 }
 
+/** Today's vision plan for the selected crew member: quick or full, and the last result. */
+function useVisionPlan(version: number) {
+  const { current } = useMission()
+  const rec = useMemo(() => loadCrewVision(current.crewId), [current.crewId, version])
+  const full = needsFullAcuity({
+    fullDaily: loadFullDaily(),
+    eyeSymptom: Boolean(current.record.eyeSymptom),
+    lastFullAt: rec.lastFullAt,
+    now: Date.now(),
+  })
+  return { full, last: rec.last }
+}
+
+type DailyStep = 'pvt' | 'gonogo' | 'memory' | 'self' | 'note' | 'vision' | 'done'
+const DAILY_STEPS: DailyStep[] = ['pvt', 'gonogo', 'memory', 'self', 'note', 'vision', 'done']
+
+const enterFullscreen = () => {
+  try {
+    if (!document.fullscreenElement) void document.documentElement.requestFullscreen?.().catch(() => {})
+  } catch {
+    /* not supported: the flow still fills the window */
+  }
+}
+const exitFullscreen = () => {
+  try {
+    if (document.fullscreenElement) void document.exitFullscreen?.().catch(() => {})
+  } catch {
+    /* ignore */
+  }
+}
+
+/** The daily check, full screen: reaction test → self-report → vision check → summary. */
+function DailyCheckFlow({ onClose }: { onClose: () => void }) {
+  const { t, lang } = useI18n()
+  const { current, checkinFor, submitCheck } = useMission()
+  const status = checkinFor(current.crewId)
+  const [i, setI] = useState(0)
+  const [visionOpen, setVisionOpen] = useState(false)
+  const [version, setVersion] = useState(0)
+  const plan = useVisionPlan(version)
+  const step = DAILY_STEPS[i]
+  const stepDone = step === 'done' || status.done[step]
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    dialogRef.current?.focus()
+  }, [i])
+
+  const close = () => {
+    exitFullscreen()
+    onClose()
+  }
+  const total = DAILY_STEPS.length - 1
+  const stepName = (k: DailyStep) =>
+    k === 'gonogo' ? dt(lang, 'stepGng') : k === 'memory' ? dt(lang, 'stepSpan') : k === 'note' ? dt(lang, 'stepNote') : t(({ pvt: 'daily.step1', self: 'daily.step2', vision: 'daily.step3', done: 'daily.step4' } as const)[k])
+
+  return (
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="daily-title"
+      tabIndex={-1}
+      className="bionis-dashboard fixed inset-0 z-40 flex flex-col bg-background outline-none"
+    >
+      <header className="flex flex-col gap-3 border-b px-4 py-3 md:px-8">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 id="daily-title" className="truncate text-lg font-medium">
+              {t('daily.title')} · {current.name}
+            </h2>
+            <SimulatedBadge />
+          </div>
+          <Button type="button" variant="ghost" onClick={close} aria-label={t('daily.exit')}>
+            <XIcon />
+            <span className="hidden sm:inline">{t('daily.exit')}</span>
+          </Button>
+        </div>
+        <ol className="flex gap-2" aria-label={step === 'done' ? t('daily.step4') : t('daily.stepOf', { n: i + 1, total })}>
+          {DAILY_STEPS.map((sKey, k) => {
+            const done = sKey !== 'done' && status.done[sKey]
+            return (
+              <li key={sKey} className="flex min-w-0 flex-1 flex-col gap-1" aria-current={k === i ? 'step' : undefined}>
+                <span className={cn('h-1.5 rounded-full', k === i ? 'bg-(--bionis-blue)' : done || k < i ? 'bg-(--live)' : 'bg-muted')} />
+                <span className={cn('flex items-center gap-1 truncate text-xs', k === i ? 'font-medium text-foreground' : 'text-muted-foreground')}>
+                  {done ? <CheckIcon className="size-3.5 shrink-0 text-(--live)" aria-hidden="true" /> : null}
+                  {stepName(sKey)}
+                </span>
+              </li>
+            )
+          })}
+        </ol>
+      </header>
+
+      <main className="flex-1 overflow-y-auto px-4 py-6 md:px-8">
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+          {step === 'pvt' ? <PvtCard key={`pvt-${current.crewId}`} /> : null}
+          {step === 'gonogo' ? <GoNoGoCard key={`gng-${current.crewId}`} /> : null}
+          {step === 'memory' ? <DigitSpanCard key={`span-${current.crewId}`} /> : null}
+          {step === 'self' ? <SelfReportCard key={`self-${current.crewId}`} /> : null}
+          {step === 'note' ? <NoteCard key={`note-${current.crewId}`} /> : null}
+          {step === 'vision' ? (
+            <article className="flex flex-col gap-5 rounded-2xl border bg-[linear-gradient(180deg,rgb(20_184_166/0.08)_0%,transparent_42%)] p-5">
+              <CardTitle icon={EyeIcon} color="var(--insight-actions)" right={<InfoButton id="vision" name={t('metric.vision')} />}>
+                {vt(lang, 'title')}
+              </CardTitle>
+              <span className="inline-flex w-fit items-center rounded-xl bg-(--chart-warn-bg) px-2.5 py-1 text-xs font-medium text-(--chart-warn)">
+                {vt(lang, 'screening')}
+              </span>
+              <p className="rounded-xl bg-muted/60 px-3 py-2 text-sm">{vt(lang, plan.full ? 'modeFull' : 'modeQuick')}</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">{vt(lang, 'why')}</p>
+              {status.done.vision && plan.last ? (
+                <p className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="font-medium">{vt(lang, 'last')}:</span>
+                  <Pill level={plan.last.outcome.level} className="px-2.5 text-xs">
+                    {vt(lang, `level.${plan.last.outcome.level}` as VisionKey)}
+                  </Pill>
+                </p>
+              ) : null}
+              <Button type="button" autoFocus className="h-12 w-fit gap-2 px-6 text-base" onClick={() => setVisionOpen(true)}>
+                <PlayIcon className="size-4" />
+                {t('daily.visionStart')}
+              </Button>
+              {visionOpen ? (
+                <VisionCheckFlow
+                  crewId={current.crewId}
+                  full={plan.full}
+                  onClose={() => {
+                    setVisionOpen(false)
+                    setVersion((v) => v + 1)
+                  }}
+                  onComplete={(outcome) => {
+                    submitCheck(current.crewId, { vision: outcome, visionChange: outcome.level !== 'nominal' }, 'vision')
+                    setVersion((v) => v + 1)
+                  }}
+                />
+              ) : null}
+            </article>
+          ) : null}
+          {step === 'done' ? (
+            <article className="flex flex-col gap-4 rounded-2xl border bg-background p-5">
+              <div className="flex items-center gap-3">
+                <span className="flex size-10 items-center justify-center rounded-full bg-(--live)/15 text-(--live)">
+                  <CheckIcon className="size-5" />
+                </span>
+                <h3 className="text-lg font-medium">{t('daily.finishTitle')}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {status.done.pvt && status.done.self && status.done.vision ? t('daily.finishSub') : t('daily.partial')}
+              </p>
+              <StreakCard />
+              <Button type="button" autoFocus className="h-12 w-fit px-6 text-base" onClick={close}>
+                {t('daily.close')}
+              </Button>
+            </article>
+          ) : null}
+        </div>
+      </main>
+
+      {step !== 'done' ? (
+        <footer className="flex items-center justify-between gap-3 border-t px-4 py-3 md:px-8">
+          <Button type="button" variant="outline" className="h-11" disabled={i === 0} onClick={() => setI((n) => Math.max(0, n - 1))}>
+            {t('daily.back')}
+          </Button>
+          <div className="flex items-center gap-2">
+            {!stepDone ? (
+              <Button type="button" variant="ghost" className="h-11" onClick={() => setI((n) => n + 1)}>
+                {t('daily.skip')}
+              </Button>
+            ) : null}
+            <Button type="button" className="h-11 px-6" disabled={!stepDone} onClick={() => setI((n) => n + 1)}>
+              {t('daily.next')}
+            </Button>
+          </div>
+        </footer>
+      ) : null}
+    </div>
+  )
+}
+
+/** Entry card: one Start button for the whole daily check. */
+function DailyCheckHero({ onStart }: { onStart: () => void }) {
+  const { t, lang } = useI18n()
+  const { current, checkinFor } = useMission()
+  const status = checkinFor(current.crewId)
+  const plan = useVisionPlan(0)
+  const all = status.done.pvt && status.done.self && status.done.vision
+  const visionMode = vt(lang, plan.full ? 'modeFull' : 'modeQuick').replace(/^[^:]+:\s*/, '')
+  const steps: Array<[Exclude<DailyStep, 'done'>, typeof TimerIcon, string]> = [
+    ['pvt', TimerIcon, t('daily.step1')],
+    ['gonogo', TrafficConeIcon, dt(lang, 'stepGng')],
+    ['memory', BrainIcon, dt(lang, 'stepSpan')],
+    ['self', ClipboardCheckIcon, t('daily.step2')],
+    ['note', MessageSquareTextIcon, dt(lang, 'stepNote')],
+    ['vision', EyeIcon, `${t('daily.step3')} · ${visionMode}`],
+  ]
+  return (
+    <section data-tour="dailycheck" className="flex flex-col gap-5 rounded-2xl border bg-[linear-gradient(180deg,rgb(99_102_241/0.08)_0%,transparent_42%)] p-5 md:p-6">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-xl font-medium">{t('daily.title')}</h2>
+        <p className="text-sm text-muted-foreground">{t('daily.sub')}</p>
+      </div>
+      <ol className="flex flex-col gap-2">
+        {steps.map(([key, Icon, label], k) => (
+          <li key={key} className="flex items-center gap-3 rounded-xl bg-background/70 px-3 py-2.5">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-(--bionis-blue) text-xs font-semibold text-white">{k + 1}</span>
+            <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <span className="min-w-0 flex-1 text-sm">{label}</span>
+            <span className={cn('shrink-0 rounded-lg px-2 py-0.5 text-xs font-medium', status.done[key] ? 'bg-(--live)/15 text-(--live)' : 'bg-muted text-muted-foreground')}>
+              {status.done[key] ? t('daily.doneTag') : t('daily.todoTag')}
+            </span>
+          </li>
+        ))}
+      </ol>
+      <span className="inline-flex w-fit items-center rounded-xl bg-(--chart-warn-bg) px-2.5 py-1 text-xs font-medium text-(--chart-warn)">
+        {vt(lang, 'screening')}
+      </span>
+      <Button type="button" className="h-14 w-full gap-2 text-lg sm:w-fit sm:px-10" onClick={onStart}>
+        <PlayIcon className="size-5" />
+        {all ? t('daily.again') : t('daily.start')}
+      </Button>
+    </section>
+  )
+}
+
 export function CheckContent() {
   const { t, lang } = useI18n()
   const { navigate } = useDashboardNavigation()
   const { current } = useMission()
+  const [running, setRunning] = useState(false)
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
@@ -382,12 +561,14 @@ export function CheckContent() {
         }
       />
       <SimBadge />
+      <DailyCheckHero
+        onStart={() => {
+          enterFullscreen()
+          setRunning(true)
+        }}
+      />
       <StreakCard />
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <PvtCard key={`pvt-${current.crewId}`} />
-        <SelfReportCard />
-        <AmslerCard key={`amsler-${current.crewId}`} />
-      </section>
+      {running ? <DailyCheckFlow onClose={() => setRunning(false)} /> : null}
     </div>
   )
 }

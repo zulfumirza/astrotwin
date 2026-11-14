@@ -1,7 +1,8 @@
 // Clickable body figure: each area takes the colour of its current status and
 // opens the indicators and alerts that belong to it. Fully keyboard-operable
 // (Tab to an area, Enter/Space to open) and mirrored by a labelled button list.
-import { useState, type KeyboardEvent } from 'react'
+import { useState } from 'react'
+import Body, { type ExtendedBodyPart, type Slug } from 'react-muscle-highlighter'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CO2_ELEVATED_MMHG, maxLevel, METRICS, type Assessment, type Finding, type Level, type MetricId } from '../../engine'
@@ -9,6 +10,7 @@ import { useI18n } from '../../i18n'
 import { findingText, LEVEL_NAMES } from '../../i18n/findings'
 import type { InfoId } from '../../i18n/info'
 import { useDashboardNavigation } from '../bionis/navigation'
+import { useTheme } from '../bionis/theme-provider'
 import { InfoButton, levelText, Pill, SimulatedBadge } from './ui'
 
 export type RegionId = 'brain' | 'eyes' | 'heart' | 'lungs' | 'msk' | 'body'
@@ -25,7 +27,7 @@ const REGION_METRICS: Record<RegionId, MetricId[]> = {
 /** Non-metric findings (events and compound rules) shown under each area. */
 const REGION_FINDINGS: Record<RegionId, string[]> = {
   brain: ['rule.judgment', 'rule.conflict'],
-  eyes: ['event.vision', 'rule.sans'],
+  eyes: ['event.vision', 'event.visionWatch', 'event.visionAlert', 'event.visionUrgent', 'rule.sans'],
   heart: [],
   lungs: ['event.co2'],
   msk: [],
@@ -52,6 +54,97 @@ const DOT: Record<Level, string> = {
   watch: 'bg-(--prediction-warn)',
   alert: 'bg-(--prediction-warn)',
   critical: 'bg-(--prediction-danger)',
+}
+
+// Anatomical figure: react-muscle-highlighter (MIT, SVG, no dependencies; works offline).
+// Eyes and heart have no muscle slug, so they are drawn as a small overlay on the front view.
+const REGION_SLUGS: Record<RegionId, Slug[]> = {
+  brain: ['head', 'hair'],
+  eyes: [],
+  heart: [],
+  lungs: ['chest', 'upper-back'],
+  msk: ['deltoids', 'biceps', 'triceps', 'forearm', 'abs', 'obliques', 'trapezius', 'lower-back', 'gluteal', 'adductors', 'quadriceps', 'hamstring', 'calves', 'tibialis'],
+  body: ['neck', 'hands', 'feet', 'knees', 'ankles'],
+}
+const SLUG_REGION = new Map<Slug, RegionId>(
+  REGION_IDS.flatMap((r) => REGION_SLUGS[r].map((slug) => [slug, r] as [Slug, RegionId])),
+)
+/** Fictional crew: which body model to draw. */
+const FEMALE_CREW = new Set(['cdr', 'ms2'])
+
+// Status tints. SVG fill attributes cannot use CSS variables, so the two themes are explicit.
+const TINT: Record<'light' | 'dark', Record<Level, string>> = {
+  light: { nominal: '#86efac', watch: '#fcd34d', alert: '#fbbf24', critical: '#f87171' },
+  dark: { nominal: '#15803d', watch: '#b45309', alert: '#c2410c', critical: '#b91c1c' },
+}
+const SELECTED_STROKE = { light: '#0f172a', dark: '#f8fafc' } as const
+
+/** Overlay positions for eyes and heart, in each front model's own viewBox units. */
+const OVERLAY: Record<'male' | 'female', { viewBox: string; eyes: [number, number][]; eyeR: [number, number]; heart: [number, number]; heartScale: number }> = {
+  // Measured from the rendered head and chest paths (getBBox) of react-muscle-highlighter 1.2.0.
+  male: { viewBox: '0 0 724 1448', eyes: [[343, 186], [385, 186]], eyeR: [13, 8], heart: [396, 372], heartScale: 2.2 },
+  female: { viewBox: '-50 -40 734 1538', eyes: [[299, 166], [341, 166]], eyeR: [13, 8], heart: [352, 370], heartScale: 2.2 },
+}
+
+function AnatomyFigure({
+  levels,
+  region,
+  onPick,
+  gender,
+}: {
+  levels: Record<RegionId, Level>
+  region: RegionId
+  onPick: (r: RegionId) => void
+  gender: 'male' | 'female'
+}) {
+  const { resolvedTheme } = useTheme()
+  const tint = TINT[resolvedTheme]
+  const data: ExtendedBodyPart[] = REGION_IDS.flatMap((r) =>
+    REGION_SLUGS[r].map((slug) => ({
+      slug,
+      color: tint[levels[r]],
+      styles: r === region ? { stroke: SELECTED_STROKE[resolvedTheme], strokeWidth: 3 } : undefined,
+    })),
+  )
+  const press = (part: ExtendedBodyPart) => {
+    const r = part.slug ? SLUG_REGION.get(part.slug) : undefined
+    if (r) onPick(r)
+  }
+  const o = OVERLAY[gender]
+  const overlayShape = (r: RegionId) => ({
+    fill: tint[levels[r]],
+    stroke: region === r ? SELECTED_STROKE[resolvedTheme] : '#0f172a',
+    strokeWidth: region === r ? 4 : 2,
+    style: { cursor: 'pointer', pointerEvents: 'auto' as const },
+    onClick: () => onPick(r),
+  })
+  const common = {
+    data,
+    gender,
+    scale: 0.8,
+    border: 'none' as const,
+    defaultFill: resolvedTheme === 'dark' ? '#334155' : '#cbd5e1',
+    onBodyPartPress: press,
+  }
+  // Mouse/touch shortcut only: keyboard and screen-reader users use the labelled buttons below.
+  return (
+    <div aria-hidden="true" className="anatomy-figure flex items-start justify-center gap-2">
+      <div className="relative">
+        <Body {...common} side="front" />
+        <svg viewBox={o.viewBox} className="pointer-events-none absolute inset-0 h-full w-full">
+          {o.eyes.map(([cx, cy]) => (
+            <ellipse key={cx} cx={cx} cy={cy} rx={o.eyeR[0]} ry={o.eyeR[1]} {...overlayShape('eyes')} />
+          ))}
+          <path
+            transform={`translate(${o.heart[0]} ${o.heart[1]}) scale(${o.heartScale})`}
+            d="M 0 14 C -10 6 -14 -2 -8 -7 C -4 -10 0 -7 0 -3 C 0 -7 4 -10 8 -7 C 14 -2 10 6 0 14 Z"
+            {...overlayShape('heart')}
+          />
+        </svg>
+      </div>
+      <Body {...common} side="back" />
+    </div>
+  )
 }
 
 interface Row {
@@ -107,25 +200,9 @@ export function BodyMap({ assessment: a }: { assessment: Assessment }) {
       level: a.careerLimitPct >= 50 ? 'watch' : 'nominal',
     })
 
-  const areaProps = (id: RegionId) => ({
-    role: 'button' as const,
-    tabIndex: 0,
-    'aria-pressed': region === id,
-    'aria-label': t('body.aria', { region: `${t(`body.${id}`)} — ${t(`body.${id}.sub`)}`, level: LEVEL_NAMES[lang][levels[id]] }),
-    onClick: () => setPicked(id),
-    onKeyDown: (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault()
-        setPicked(id)
-      }
-    },
-    className: cn('body-region cursor-pointer outline-none', region === id && 'body-region-active'),
-    style: { color: FILL[levels[id]] },
-  })
-  const shape = { fill: 'currentColor', fillOpacity: 0.3, stroke: 'currentColor', strokeWidth: 2 }
 
   return (
-    <article className="flex flex-col gap-5 rounded-2xl border bg-background p-4 md:p-5">
+    <article className="flex flex-col gap-5 rounded-2xl border bg-background p-4 md:p-5" data-tour="bodymap">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-col gap-1">
           <h3 className="text-lg font-medium">{t('body.title')}</h3>
@@ -134,45 +211,9 @@ export function BodyMap({ assessment: a }: { assessment: Assessment }) {
         <SimulatedBadge />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,16rem)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
         <div className="flex flex-col items-center gap-4">
-          <svg viewBox="0 0 220 440" className="h-80 w-auto" role="group" aria-label={t('body.title')}>
-            {/* Whole body: torso and head outline */}
-            <g {...areaProps('body')}>
-              <rect x="66" y="92" width="88" height="152" rx="28" {...shape} />
-              <rect x="98" y="76" width="24" height="24" rx="8" {...shape} />
-              <path d="M 76 48 A 34 34 0 0 0 144 48 Z" {...shape} />
-            </g>
-            {/* Bones & muscles: arms and legs */}
-            <g {...areaProps('msk')}>
-              <rect x="32" y="98" width="26" height="150" rx="13" {...shape} />
-              <rect x="162" y="98" width="26" height="150" rx="13" {...shape} />
-              <rect x="72" y="236" width="34" height="184" rx="17" {...shape} />
-              <rect x="114" y="236" width="34" height="184" rx="17" {...shape} />
-            </g>
-            {/* Brain: upper half of the head */}
-            <g {...areaProps('brain')}>
-              <path d="M 76 48 A 34 34 0 0 1 144 48 Z" {...shape} fillOpacity={0.45} />
-            </g>
-            {/* Eyes */}
-            <g {...areaProps('eyes')}>
-              <ellipse cx="97" cy="58" rx="8" ry="5" {...shape} fillOpacity={0.7} />
-              <ellipse cx="123" cy="58" rx="8" ry="5" {...shape} fillOpacity={0.7} />
-            </g>
-            {/* Lungs */}
-            <g {...areaProps('lungs')}>
-              <ellipse cx="89" cy="146" rx="15" ry="30" {...shape} fillOpacity={0.45} />
-              <ellipse cx="131" cy="146" rx="15" ry="30" {...shape} fillOpacity={0.45} />
-            </g>
-            {/* Heart */}
-            <g {...areaProps('heart')}>
-              <path
-                d="M 112 166 C 100 156 96 146 103 141 C 108 138 112 142 112 146 C 112 142 116 138 121 141 C 128 146 124 156 112 166 Z"
-                {...shape}
-                fillOpacity={0.8}
-              />
-            </g>
-          </svg>
+          <AnatomyFigure levels={levels} region={region} onPick={setPicked} gender={FEMALE_CREW.has(a.crewId) ? 'female' : 'male'} />
 
           <div className="flex flex-wrap justify-center gap-2">
             {REGION_IDS.map((id) => (
@@ -182,6 +223,7 @@ export function BodyMap({ assessment: a }: { assessment: Assessment }) {
                 size="sm"
                 variant={region === id ? 'default' : 'outline'}
                 aria-pressed={region === id}
+                aria-label={t('body.aria', { region: `${t(`body.${id}`)} — ${t(`body.${id}.sub`)}`, level: LEVEL_NAMES[lang][levels[id]] })}
                 onClick={() => setPicked(id)}
               >
                 <span aria-hidden className={cn('size-2 rounded-full', DOT[levels[id]])} />

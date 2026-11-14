@@ -7,6 +7,7 @@ import {
   PredictionIcon,
   RecoveryIcon,
   ReportsIcon,
+  QuestionIcon,
   TrendsIcon,
 } from '../bionis/icons'
 import type { UiKey } from '../../i18n/ui'
@@ -38,6 +39,7 @@ export const navGroups: Array<{ label: UiKey; items: NavItem[] }> = [
       { key: 'nav.reports', href: '/reports', icon: ReportsIcon },
       { key: 'nav.mc', href: '/mission-control', icon: BellIcon },
       { key: 'nav.settings', href: '/settings', icon: GearIcon },
+      { key: 'nav.help', href: '/help', icon: QuestionIcon },
     ],
   },
 ]

@@ -31,6 +31,25 @@ function numbersAreGrounded(sbar, payload) {
   return SBAR_KEYS.every((k) => tokens(sbar[k]).every((t) => allowed.has(t)));
 }
 
+// src/engine/note.ts
+var NOTE_FLAGS = ["headache", "rash", "vision", "sleep", "stress", "mood", "pain", "nausea", "breathing", "dizzy"];
+var NOTE_MAX = 1e3;
+function parseAiNote(x) {
+  if (!x || typeof x !== "object") return null;
+  const o = x;
+  const str = (v) => typeof v === "string" && v.trim().length > 0 && v.length <= 600;
+  if (!str(o.summary) || !str(o.message) || typeof o.tellSurgeon !== "boolean" || !Array.isArray(o.flags)) return null;
+  const flags = o.flags.filter((f) => typeof f === "string" && NOTE_FLAGS.includes(f));
+  return { summary: o.summary.trim(), message: o.message.trim(), flags: [...new Set(flags)], tellSurgeon: o.tellSurgeon };
+}
+function aiNoteNumbersGrounded(r, note) {
+  const nums = (s) => s.match(/\d+(?:[.,]\d+)?/g) ?? [];
+  const allowed = new Set(nums(note));
+  return [...nums(r.summary), ...nums(r.message)].every((n) => allowed.has(n));
+}
+var DRUG_OR_DOSE = /\b\d+\s?(mg|mcg|µg|ml|iu|tablet|pill)s?\b|ibuprofen|paracetamol|acetaminophen|aspirin|melatonin|zolpidem|modafinil|antibiotic|antiviral|valacyclovir|steroid|parol|aspirin|ilaç|tablet|doz/i;
+var aiNoteIsSafe = (r) => !DRUG_OR_DOSE.test(`${r.summary} ${r.message}`);
+
 // server/handlers.ts
 var cache = /* @__PURE__ */ new Map();
 async function cached(key, ttlMs, load) {
@@ -181,7 +200,7 @@ function looksLikePayload(p) {
 var modelCooldown = /* @__PURE__ */ new Map();
 async function narrate(body) {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey === "MY_GEMINI_API_KEY") return { status: 503, body: { error: "narrator-not-configured" } };
+  if (!apiKey || apiKey === "MY_GEMINI_API_KEY") return { status: 200, body: { sbar: null, fallback: "narrator-not-configured" } };
   const payload = body?.payload;
   if (!looksLikePayload(payload)) return { status: 400, body: { error: "invalid-payload" } };
   const models = [
@@ -226,21 +245,113 @@ async function narrate(body) {
     if (!numbersAreGrounded(sbar, payload)) throw new Error("narrator-numbers-rejected");
     return { sbar, model };
   };
-  const { value, cachedAt, hit } = await cached(`narrate:${models.join(",")}:${JSON.stringify(payload)}`, 10 * MIN, async () => {
-    let lastError = new Error("narrator-unavailable");
-    for (const model of models) {
-      if ((modelCooldown.get(model) ?? 0) > Date.now() && model !== models[models.length - 1]) continue;
-      try {
-        return await callModel(model);
-      } catch (err) {
-        lastError = err;
-        const msg = err instanceof Error ? err.message : "";
-        if (!msg.startsWith("narrator-")) modelCooldown.set(model, Date.now() + 2 * MIN);
+  let narrated;
+  try {
+    narrated = await cached(`narrate:${models.join(",")}:${JSON.stringify(payload)}`, 10 * MIN, async () => {
+      let lastError = new Error("narrator-unavailable");
+      for (const model of models) {
+        if ((modelCooldown.get(model) ?? 0) > Date.now() && model !== models[models.length - 1]) continue;
+        try {
+          return await callModel(model);
+        } catch (err) {
+          lastError = err;
+          const msg = err instanceof Error ? err.message : "";
+          if (!msg.startsWith("narrator-")) modelCooldown.set(model, Date.now() + 2 * MIN);
+        }
       }
-    }
-    throw lastError;
-  });
+      throw lastError;
+    });
+  } catch (err) {
+    const reason = err instanceof Error ? err.message.replace(/api_key=[^&s]+/g, "api_key=***") : "narrator-unavailable";
+    return { status: 200, body: { sbar: null, fallback: reason } };
+  }
+  const { value, cachedAt, hit } = narrated;
   return { status: 200, body: { ...value, fetchedAt: cachedAt, serverCache: hit } };
+}
+var REFLECT_INSTRUCTION = `You help an astronaut reflect on a short free-text note written during a daily health check-in on a space mission.
+Rules you must follow:
+- Do not diagnose. Do not name diseases. Do not give medication names, doses or treatment.
+- Do not add numbers that are not in the note.
+- "flags" may only contain items from this list: ${NOTE_FLAGS.join(", ")}. Use them for things the note clearly mentions.
+- "summary": one short sentence restating what the astronaut wrote, neutral and factual.
+- "message": at most 2 short, calm sentences to the astronaut. Frame any advice as following the onboard protocol or talking to the crew medical officer.
+- "tellSurgeon": true if the note mentions anything severe, sudden, worsening, or about chest, breathing, fainting or sudden vision loss.
+- Write in the language given by "lang" ("en" = English, "tr" = Turkish).
+Return only JSON with the keys summary, message, flags, tellSurgeon.`;
+async function reflect(body) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === "MY_GEMINI_API_KEY") return { status: 200, body: { result: null, fallback: "narrator-not-configured" } };
+  const note = typeof body?.note === "string" ? body.note.trim().slice(0, NOTE_MAX) : "";
+  const lang = body?.lang === "tr" ? "tr" : "en";
+  if (!note) return { status: 400, body: { error: "empty-note" } };
+  const models = [
+    .../* @__PURE__ */ new Set([
+      process.env.GEMINI_MODEL || "gemini-flash-latest",
+      process.env.GEMINI_FALLBACK_MODEL || "gemini-flash-lite-latest"
+    ])
+  ];
+  const str = { type: "STRING" };
+  const call = async (model) => {
+    const res = await fetchWithTimeout(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: REFLECT_INSTRUCTION }] },
+          contents: [{ role: "user", parts: [{ text: JSON.stringify({ lang, note }) }] }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 1024,
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "OBJECT",
+              properties: {
+                summary: str,
+                message: str,
+                flags: { type: "ARRAY", items: { type: "STRING", enum: [...NOTE_FLAGS] } },
+                tellSurgeon: { type: "BOOLEAN" }
+              },
+              required: ["summary", "message", "flags", "tellSurgeon"]
+            }
+          }
+        })
+      },
+      8e3
+    );
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      throw new Error("narrator-invalid-json");
+    }
+    const result = parseAiNote(parsed);
+    if (!result) throw new Error("narrator-schema-rejected");
+    if (!aiNoteNumbersGrounded(result, note)) throw new Error("narrator-numbers-rejected");
+    if (!aiNoteIsSafe(result)) throw new Error("narrator-unsafe-rejected");
+    return { result, model };
+  };
+  try {
+    const { value } = await cached(`reflect:${lang}:${note}`, 10 * MIN, async () => {
+      let last = new Error("narrator-unavailable");
+      for (const model of models) {
+        if ((modelCooldown.get(model) ?? 0) > Date.now() && model !== models[models.length - 1]) continue;
+        try {
+          return await call(model);
+        } catch (err) {
+          last = err;
+          const msg = err instanceof Error ? err.message : "";
+          if (!msg.startsWith("narrator-")) modelCooldown.set(model, Date.now() + 2 * MIN);
+        }
+      }
+      throw last;
+    });
+    return { status: 200, body: value };
+  } catch (err) {
+    return { status: 200, body: { result: null, fallback: err instanceof Error ? err.message : "narrator-unavailable" } };
+  }
 }
 async function handleApi(route, query, body) {
   try {
@@ -251,6 +362,8 @@ async function handleApi(route, query, body) {
         return await swpc();
       case "horizons":
         return await horizons();
+      case "reflect":
+        return await reflect(body);
       case "narrate":
         return await narrate(body);
       case "health":

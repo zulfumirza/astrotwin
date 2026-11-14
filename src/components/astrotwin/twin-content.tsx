@@ -142,7 +142,7 @@ export function TwinContent() {
         </article>
       </section>
 
-      <article className="flex min-h-110 flex-col gap-5 rounded-2xl border bg-background p-4 md:p-6">
+      <article className="flex min-h-110 flex-col gap-5 rounded-2xl border bg-background p-4 md:p-6" data-tour="twin">
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <div className="flex items-center gap-3">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-(--insight-prediction) text-white">

@@ -4,6 +4,8 @@ import { DashboardTopbar } from './components/bionis/topbar'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { useI18n } from './i18n'
 import { CrisisCard } from './components/astrotwin/crisis-card'
+import { GuidedTour } from './components/astrotwin/tour'
+import { ScreenErrorBoundary } from './components/astrotwin/error-boundary'
 import { useDashboardNavigation } from './components/bionis/navigation'
 import './dashboard.css'
 
@@ -43,13 +45,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {t('skip')}
       </a>
       <DashboardSidebar />
+      <GuidedTour />
 
       <main className="flex flex-1 flex-col overflow-hidden">
         <DashboardTopbar />
         <div id="main-content" tabIndex={-1} className="flex-1 overflow-y-auto px-4 py-6 outline-none md:px-8 md:py-10">
           {/* Crisis mode: shown above every onboard screen; Mission Control is Earth's view. */}
           {pathname !== '/mission-control' ? <CrisisCard /> : null}
-          {children}
+          <ScreenErrorBoundary resetKey={pathname} title={t('error.title')} body={t('error.body')} retry={t('error.retry')}>
+            {children}
+          </ScreenErrorBoundary>
           <footer className="mt-10 flex flex-col gap-2 border-t pt-4 text-xs leading-relaxed text-muted-foreground">
             <p className="text-sm text-foreground">
               {t('footer.builtBy')}{' '}

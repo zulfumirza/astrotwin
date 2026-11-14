@@ -1,5 +1,6 @@
 import DashboardLayout from './dashboard-layout'
 import { CheckContent } from './components/astrotwin/check-content'
+import { HelpContent } from './components/astrotwin/help-content'
 import { CrewContent } from './components/astrotwin/crew-content'
 import { RadiationContent } from './components/astrotwin/radiation-content'
 import { MissionControlContent, ReportsContent } from './components/astrotwin/reports-content'
@@ -31,6 +32,8 @@ function DashboardRoute() {
         return <ReportsContent />
       case '/mission-control':
         return <MissionControlContent />
+      case '/help':
+        return <HelpContent />
       case '/settings':
         return <SettingsContent />
       default:

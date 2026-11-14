@@ -39,7 +39,7 @@ export function SurgeonContent() {
       <SimBadge />
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-        <article className="flex flex-col gap-5 rounded-2xl border bg-[linear-gradient(180deg,rgb(20_184_166/0.08)_0%,transparent_42%)] p-5 xl:col-span-2">
+        <article className="flex flex-col gap-5 rounded-2xl border bg-[linear-gradient(180deg,rgb(20_184_166/0.08)_0%,transparent_42%)] p-5 xl:col-span-2" data-tour="surgeon">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-(--insight-actions) text-white">

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   BookOpenIcon,
   CreditCardIcon,
@@ -8,8 +7,6 @@ import {
   UserIcon as LucideUserIcon,
 } from 'lucide-react'
 import {
-  ArrowRightIcon,
-  CloseIcon,
   QuestionIcon,
   SidebarCollapseIcon,
   ToggleIcon,
@@ -18,7 +15,6 @@ import {
 import { AstroTwinWordmark, BionisLogo } from './logo'
 import { DashboardLink, useDashboardNavigation } from './navigation'
 import { useTheme } from './theme-provider'
-import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -77,6 +73,7 @@ function NavItem({ item }: { item: NavItemType }) {
       <DashboardLink
         href={item.href}
         aria-current={isActive ? 'page' : undefined}
+        data-tour={item.href === '/help' ? 'help' : undefined}
         onClick={() => {
           if (isMobile) setOpenMobile(false)
         }}
@@ -270,62 +267,6 @@ function CollapseControl({
   )
 }
 
-function HealthCoachCard() {
-  const { t } = useI18n()
-  const [open, setOpen] = useState(true)
-  const { navigate } = useDashboardNavigation()
-  const { isMobile, setOpenMobile } = useSidebar()
-
-  if (!open) return null
-
-  return (
-    <div
-      className={cn(
-        'relative flex flex-col gap-8 rounded-2xl border p-4',
-        'bg-[linear-gradient(347deg,var(--promo-gradient-from)_47.58%,var(--promo-gradient-to)_306.43%)]',
-        'group-data-[collapsible=icon]:hidden',
-      )}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <span className="rounded-xl bg-primary px-2.5 py-1.5 text-xs font-medium tracking-tight text-primary-foreground">
-          {t('side.promoTag')}
-        </span>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          aria-label={t('side.promoDismiss')}
-        >
-          <CloseIcon className="size-4" />
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          <p className="font-semibold tracking-tight">
-            {t('side.promoTitle')}
-          </p>
-          <p className="text-sm tracking-tight text-muted-foreground">
-            {t('side.promoBody')}
-          </p>
-        </div>
-
-        <Button
-          type="button"
-          onClick={() => {
-            navigate('/surgeon')
-            if (isMobile) setOpenMobile(false)
-          }}
-          className="h-11 w-full gap-1 rounded-xl pr-2 pl-3 text-sm tracking-tight"
-        >
-          {t('side.promoCta')}
-          <ArrowRightIcon className="size-5" />
-        </Button>
-      </div>
-    </div>
-  )
-}
-
 export function DashboardSidebar() {
   const { t } = useI18n()
   const { state, toggleSidebar } = useSidebar()
@@ -368,7 +309,6 @@ export function DashboardSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="gap-6 border-t border-sidebar-border px-3 py-3">
-        <HealthCoachCard />
         <SidebarMenu className="gap-2">
           <HelpItem />
           <DarkModeItem />

@@ -36,6 +36,7 @@ export function CrisisCard() {
 
   return (
     <section
+      data-tour="crisis"
       role="alert"
       aria-labelledby="crisis-title"
       className="mb-8 rounded-2xl bg-[#b91c1c] p-5 text-white shadow-lg md:p-6"

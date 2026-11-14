@@ -25,7 +25,7 @@ const isNarratorReady = () =>
 export async function narrate(payload: ReportPayload): Promise<Sourced<Sbar>> {
   try {
     if (!(await isNarratorReady())) throw new Error('narrator unavailable')
-    const res = await fetchJson<{ sbar: unknown }>(
+    const res = await fetchJson<{ sbar: unknown; fallback?: string }>(
       '/api/narrate',
       {
         method: 'POST',

@@ -225,6 +225,7 @@ export function DashboardTopbar() {
               size="icon-lg"
               className="size-11 text-sm font-medium"
               aria-label={t('top.lang')}
+              data-tour="lang"
               onClick={() => setLang(lang === 'en' ? 'tr' : 'en')}
             >
               {lang === 'en' ? 'TR' : 'EN'}

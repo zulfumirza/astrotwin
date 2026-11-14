@@ -58,6 +58,7 @@ export function ScenarioSelect() {
           type="button"
           variant="outline"
           aria-label={t('scenario.label')}
+          data-tour="scenario"
           className="h-10 shrink-0 gap-1.5 rounded-lg px-3.5 text-sm font-normal tracking-tight shadow-[0_2px_4px_rgba(0,0,0,0.05)]"
         >
           <CalendarIcon className="size-4" />
@@ -209,7 +210,7 @@ export function CrewContent() {
         </div>
       </section>
 
-      <section className="flex flex-col gap-3.5">
+      <section className="flex flex-col gap-3.5" data-tour="crew">
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-medium">{t('crew.section')}</h2>
@@ -258,7 +259,7 @@ export function CrewContent() {
 
       <BodyMap assessment={current} />
 
-      <section className="flex flex-col gap-3.5">
+      <section className="flex flex-col gap-3.5" data-tour="hazards">
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-medium">{t('hazards.title')}</h2>

@@ -4,6 +4,7 @@
 
 import { isValidSbar, numbersAreGrounded, type ReportPayload } from '../src/engine/sbar'
 import type { ProtonPoint, SpaceWeatherEvent } from '../src/engine/radiation'
+import { aiNoteIsSafe, aiNoteNumbersGrounded, NOTE_FLAGS, NOTE_MAX, parseAiNote } from '../src/engine/note'
 
 export interface ApiResult {
   status: number
@@ -185,7 +186,7 @@ const modelCooldown = new Map<string, number>()
 
 async function narrate(body: any): Promise<ApiResult> {
   const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') return { status: 503, body: { error: 'narrator-not-configured' } }
+  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') return { status: 200, body: { sbar: null, fallback: 'narrator-not-configured' } }
   const payload = body?.payload
   if (!looksLikePayload(payload)) return { status: 400, body: { error: 'invalid-payload' } }
   // Primary model first; if it is overloaded, slow or returns rejected text,
@@ -234,7 +235,9 @@ async function narrate(body: any): Promise<ApiResult> {
     return { sbar, model }
   }
 
-  const { value, cachedAt, hit } = await cached(`narrate:${models.join(',')}:${JSON.stringify(payload)}`, 10 * MIN, async () => {
+  let narrated: { value: { sbar: unknown; model: string }; cachedAt: number; hit: boolean }
+  try {
+  narrated = await cached(`narrate:${models.join(',')}:${JSON.stringify(payload)}`, 10 * MIN, async () => {
     let lastError: unknown = new Error('narrator-unavailable')
     for (const model of models) {
       // Skip a model that just failed upstream (overload/timeout) for 2 minutes,
@@ -250,7 +253,105 @@ async function narrate(body: any): Promise<ApiResult> {
     }
     throw lastError
   })
+  } catch (err) {
+    // Overloaded model, timeout, bad JSON or a changed number: the client shows the template text.
+    const reason = err instanceof Error ? err.message.replace(/api_key=[^&s]+/g, 'api_key=***') : 'narrator-unavailable'
+    return { status: 200, body: { sbar: null, fallback: reason } }
+  }
+  const { value, cachedAt, hit } = narrated
   return { status: 200, body: { ...value, fetchedAt: cachedAt, serverCache: hit } }
+}
+
+// --- AI reflection on the astronaut's free-text note --------------------------------
+// Same rule as the narrator: the model never scores, diagnoses or changes a tier.
+// It only reflects the note back and points to check-in boxes the astronaut may
+// want to tick (from a fixed list). Medication names, doses and invented numbers
+// are rejected; any failure → the client keeps the offline keyword evaluation.
+const REFLECT_INSTRUCTION = `You help an astronaut reflect on a short free-text note written during a daily health check-in on a space mission.
+Rules you must follow:
+- Do not diagnose. Do not name diseases. Do not give medication names, doses or treatment.
+- Do not add numbers that are not in the note.
+- "flags" may only contain items from this list: ${NOTE_FLAGS.join(', ')}. Use them for things the note clearly mentions.
+- "summary": one short sentence restating what the astronaut wrote, neutral and factual.
+- "message": at most 2 short, calm sentences to the astronaut. Frame any advice as following the onboard protocol or talking to the crew medical officer.
+- "tellSurgeon": true if the note mentions anything severe, sudden, worsening, or about chest, breathing, fainting or sudden vision loss.
+- Write in the language given by "lang" ("en" = English, "tr" = Turkish).
+Return only JSON with the keys summary, message, flags, tellSurgeon.`
+
+async function reflect(body: any): Promise<ApiResult> {
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') return { status: 200, body: { result: null, fallback: 'narrator-not-configured' } }
+  const note = typeof body?.note === 'string' ? body.note.trim().slice(0, NOTE_MAX) : ''
+  const lang = body?.lang === 'tr' ? 'tr' : 'en'
+  if (!note) return { status: 400, body: { error: 'empty-note' } }
+  const models = [
+    ...new Set([
+      process.env.GEMINI_MODEL || 'gemini-flash-latest',
+      process.env.GEMINI_FALLBACK_MODEL || 'gemini-flash-lite-latest',
+    ]),
+  ]
+  const str = { type: 'STRING' }
+  const call = async (model: string) => {
+    const res = await fetchWithTimeout(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: REFLECT_INSTRUCTION }] },
+          contents: [{ role: 'user', parts: [{ text: JSON.stringify({ lang, note }) }] }],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 1024,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'OBJECT',
+              properties: {
+                summary: str,
+                message: str,
+                flags: { type: 'ARRAY', items: { type: 'STRING', enum: [...NOTE_FLAGS] } },
+                tellSurgeon: { type: 'BOOLEAN' },
+              },
+              required: ['summary', 'message', 'flags', 'tellSurgeon'],
+            },
+          },
+        }),
+      },
+      8_000,
+    )
+    const data: any = await res.json()
+    const text = data?.candidates?.[0]?.content?.parts?.map((p: any) => p.text ?? '').join('') ?? ''
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(text)
+    } catch {
+      throw new Error('narrator-invalid-json')
+    }
+    const result = parseAiNote(parsed)
+    if (!result) throw new Error('narrator-schema-rejected')
+    if (!aiNoteNumbersGrounded(result, note)) throw new Error('narrator-numbers-rejected')
+    if (!aiNoteIsSafe(result)) throw new Error('narrator-unsafe-rejected')
+    return { result, model }
+  }
+  try {
+    const { value } = await cached(`reflect:${lang}:${note}`, 10 * MIN, async () => {
+      let last: unknown = new Error('narrator-unavailable')
+      for (const model of models) {
+        if ((modelCooldown.get(model) ?? 0) > Date.now() && model !== models[models.length - 1]) continue
+        try {
+          return await call(model)
+        } catch (err) {
+          last = err
+          const msg = err instanceof Error ? err.message : ''
+          if (!msg.startsWith('narrator-')) modelCooldown.set(model, Date.now() + 2 * MIN)
+        }
+      }
+      throw last
+    })
+    return { status: 200, body: value }
+  } catch (err) {
+    return { status: 200, body: { result: null, fallback: err instanceof Error ? err.message : 'narrator-unavailable' } }
+  }
 }
 
 export async function handleApi(route: string, query: Record<string, string>, body: unknown): Promise<ApiResult> {
@@ -262,6 +363,8 @@ export async function handleApi(route: string, query: Record<string, string>, bo
         return await swpc()
       case 'horizons':
         return await horizons()
+      case 'reflect':
+        return await reflect(body)
       case 'narrate':
         return await narrate(body)
       case 'health':

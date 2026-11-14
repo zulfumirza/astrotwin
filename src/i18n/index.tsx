@@ -49,7 +49,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo<I18n>(
-    () => ({ lang, setLang, t: (key, params) => fmt(UI[lang][key], params) }),
+    () => ({ lang, setLang, t: (key, params) => fmt(UI[lang][key] ?? UI.en[key] ?? key, params) }),
     [lang, setLang],
   )
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>

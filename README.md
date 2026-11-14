@@ -28,6 +28,8 @@ AstroTwin is an in-vehicle (offline-capable) health assistant built on NASA's **
 | **Body map**: clickable figure (brain, eyes, heart, lungs, bones & muscles, whole body), coloured by current status, keyboard-operable | Crew |
 | **"Why this matters"** cards on every indicator: why we measure it, what can skew it, when to tell the flight surgeon | everywhere an indicator is shown |
 | **Crisis mode**: at Critical tier one high-contrast card on top — what happened, 1–3 steps, when the report reaches Earth | every onboard screen |
+| **Vision Check** (screening only, not a medical exam): screen calibration with a bank/ID card, tumbling-E acuity per eye on a logMAR scale (20/x and 6/x), Amsler grid per eye with tap-to-mark, a 2-question eye questionnaire. First calibrated result is the per-eye baseline; ≥0.2 logMAR drop → Watch, ≥0.3 or a new Amsler change → tell the flight surgeon today, pain/flashes/floaters/curtain → Critical (auto report). Full acuity weekly or on an eye symptom; daily in demo mode | Daily check, Settings |
+| **Guided tour and Help**: a step-by-step tour that dims the screen and lights one section at a time (auto-starts on first visit), and a Help page with screens, glossary, FAQ and keyboard shortcuts | everywhere, Help |
 | **Check-in streak** and three gentle badges (7-day streak, Full check, Vision check); no points, no rankings | Daily check |
 | **Demo scenarios**: Nominal cruise, **Hidden decline** (opening scenario), Solar storm (real GLE74 event, 11 May 2024), Immune watch | scenario menu on Crew |
 

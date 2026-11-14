@@ -11,8 +11,8 @@ export interface FindingText {
   steps?: string[]
 }
 
-export const fmt = (template: string, params: Record<string, string | number> = {}) =>
-  template.replace(/\{(\w+)\}/g, (_, k) => (k in params ? String(params[k]) : `{${k}}`))
+export const fmt = (template: string | undefined, params: Record<string, string | number> = {}) =>
+  (template ?? '').replace(/\{(\w+)\}/g, (_, k) => (k in params ? String(params[k]) : `{${k}}`))
 
 export const METRIC_NAMES: Record<Lang, Record<MetricId, string>> = {
   en: {
@@ -143,6 +143,31 @@ const EN: Dict = {
     why: 'In a closed cabin, elevated CO₂ causes headache and slows thinking, and it worsens other risks.',
     action: 'Onboard protocol: check the CO₂ scrubber, increase airflow in sleep stations, log symptoms.',
   },
+  'event.cognition': {
+    title: 'Attention or memory below your usual',
+    what: '{detail}',
+    why: 'Fatigue, stress and high CO₂ show up first in attention and short-term memory, often before people notice it themselves.',
+    action: 'Onboard protocol: rest, then repeat the short tests later today; use a buddy check for safety-critical tasks.',
+  },
+  'event.visionWatch': {
+    title: 'Vision check: small change',
+    what: '{detail}',
+    why: 'Long missions can change the eye (SANS). Small changes are worth watching, one eye at a time.',
+    action: 'Repeat the Vision Check tomorrow at the same distance and lighting.',
+  },
+  'event.visionAlert': {
+    title: 'Vision check: tell the flight surgeon today',
+    what: '{detail}',
+    why: 'A clear drop in sharpness or a new distorted area can be an early sign of SANS. The stronger eye can hide changes in the other.',
+    action: 'Tell the flight surgeon today and repeat the Vision Check after rest. Screening only, not a medical exam.',
+  },
+  'event.visionUrgent': {
+    title: 'Urgent eye symptoms reported',
+    what: '{detail}',
+    why: 'Eye pain, new floaters, flashes or a curtain over vision need a medical review now, not tomorrow.',
+    action: 'Tell the crew medical officer now. Avoid EVA and safety-critical tasks until cleared.',
+    steps: ['Tell the crew medical officer now.', 'Avoid EVA and safety-critical tasks until you are cleared.', 'Note which eye is affected and when it started.'],
+  },
   'event.vision': {
     title: 'Visual change reported',
     what: 'The Amsler grid self-test showed distortion or a visual change was reported.',
@@ -222,6 +247,31 @@ const TR: Dict = {
     why: 'Kapalı kabinde yüksek CO₂ baş ağrısı yapar, düşünmeyi yavaşlatır ve diğer riskleri ağırlaştırır.',
     action: 'Araç içi protokol: CO₂ temizleyiciyi kontrol et, uyku istasyonlarında hava akışını artır, belirtileri kaydet.',
   },
+  'event.cognition': {
+    title: 'Dikkat ya da bellek her zamankinin altında',
+    what: '{detail}',
+    why: 'Yorgunluk, stres ve yüksek CO₂ ilk önce dikkat ve kısa süreli bellekte görünür; çoğu zaman kişi bunu fark etmeden önce.',
+    action: 'Araç içi protokol: dinlen, kısa testleri bugün daha sonra tekrarla; kritik görevlerde ikinci kişi kontrolü kullan.',
+  },
+  'event.visionWatch': {
+    title: 'Görme kontrolü: küçük değişiklik',
+    what: '{detail}',
+    why: 'Uzun görevler gözü değiştirebilir (SANS). Küçük değişiklikleri her göz için ayrı izlemek gerekir.',
+    action: 'Görme kontrolünü yarın aynı mesafe ve ışıkta tekrarla.',
+  },
+  'event.visionAlert': {
+    title: 'Görme kontrolü: bugün uçuş hekimine söyle',
+    what: '{detail}',
+    why: 'Netlikte belirgin düşüş ya da yeni bozuk alan SANS’ın erken işareti olabilir. Güçlü göz diğerindeki değişikliği gizleyebilir.',
+    action: 'Bugün uçuş hekimine söyle ve dinlendikten sonra görme kontrolünü tekrarla. Yalnızca tarama, tıbbi muayene değildir.',
+  },
+  'event.visionUrgent': {
+    title: 'Acil göz belirtileri bildirildi',
+    what: '{detail}',
+    why: 'Göz ağrısı, yeni uçuşan cisimler, ışık çakmaları ya da görmede perde yarın değil, şimdi tıbbi değerlendirme gerektirir.',
+    action: 'Mürettebat sağlık sorumlusuna hemen söyle. Onay alana kadar EVA ve kritik görevlerden kaçın.',
+    steps: ['Mürettebat sağlık sorumlusuna hemen söyle.', 'Onay alana kadar EVA ve kritik görevlerden kaçın.', 'Hangi gözün etkilendiğini ve ne zaman başladığını not et.'],
+  },
   'event.vision': {
     title: 'Görme değişikliği bildirildi',
     what: 'Amsler ızgarası öz-testinde bozulma görüldü ya da görme değişikliği bildirildi.',
@@ -290,6 +340,39 @@ const TR: Dict = {
 
 const DICTS: Record<Lang, Dict> = { en: EN, tr: TR }
 
+const VISION_REASON: Record<Lang, Record<string, string>> = {
+  en: {
+    redFlags: 'Eye pain, new floaters, flashes of light or a curtain over vision was reported.',
+    acuityDrop3: 'Sharpness dropped {drop} logMAR (3+ lines) from your baseline in at least one eye.',
+    acuityDrop2: 'Sharpness dropped {drop} logMAR (about 2 lines) from your baseline.',
+    amslerNew: 'The Amsler grid showed a new wavy, blurred or missing area in at least one eye.',
+    amslerKnown: 'The Amsler grid showed the same distortion as at baseline.',
+    clearlyWorse: 'You said your vision is clearly worse than last week.',
+    littleWorse: 'You said your vision is a little worse than last week.',
+    uncalibrated: 'Acuity was not compared with your baseline (screen not calibrated or distance changed).',
+    firstBaseline: 'This acuity result is now your personal baseline.',
+    spanDrop: 'You remembered {span} digits; your usual is {spanBase}.',
+    impulse: 'You pressed on red {commission} times in the Go/No-Go test.',
+    lapses: 'You missed green {omission} times in the Go/No-Go test.',
+    slower: 'Your Go/No-Go reactions were at least 20% slower than your usual.',
+  },
+  tr: {
+    redFlags: 'Göz ağrısı, yeni uçuşan cisimler, ışık çakmaları ya da görmede perde bildirildi.',
+    acuityDrop3: 'Netlik en az bir gözde baseline’a göre {drop} logMAR (3+ satır) düştü.',
+    acuityDrop2: 'Netlik baseline’a göre {drop} logMAR (yaklaşık 2 satır) düştü.',
+    amslerNew: 'Amsler ızgarasında en az bir gözde yeni dalgalı, bulanık ya da eksik alan görüldü.',
+    amslerKnown: 'Amsler ızgarasında baseline’daki ile aynı bozulma görüldü.',
+    clearlyWorse: 'Görmenin geçen haftaya göre belirgin kötü olduğunu söyledin.',
+    littleWorse: 'Görmenin geçen haftaya göre biraz kötü olduğunu söyledin.',
+    uncalibrated: 'Netlik baseline ile karşılaştırılmadı (ekran kalibre edilmedi ya da mesafe değişti).',
+    firstBaseline: 'Bu netlik sonucu artık kişisel baseline’ın.',
+    spanDrop: '{span} rakam hatırladın; her zamanki değerin {spanBase}.',
+    impulse: 'Dur-Geç testinde kırmızıda {commission} kez bastın.',
+    lapses: 'Dur-Geç testinde yeşili {omission} kez kaçırdın.',
+    slower: 'Dur-Geç tepkilerin her zamankinden en az %20 yavaştı.',
+  },
+}
+
 export function findingText(f: Finding, lang: Lang): FindingText {
   if (f.kind === 'metric') {
     const metricId = f.id.replace('metric.', '') as MetricId
@@ -303,6 +386,20 @@ export function findingText(f: Finding, lang: Lang): FindingText {
     }
   }
   const t = DICTS[lang][f.id]
+  if ((f.id.startsWith('event.vision') || f.id === 'event.cognition') && typeof f.params.reasons === 'string') {
+    const detail = f.params.reasons
+      .split(',')
+      .filter((r) => r && VISION_REASON[lang][r])
+      .map((r) => fmt(VISION_REASON[lang][r], f.params))
+      .join(' ')
+    return {
+      title: t.title,
+      what: detail,
+      why: t.why,
+      action: t.action,
+      steps: t.steps,
+    }
+  }
   return {
     title: fmt(t.title, f.params),
     what: fmt(t.what, f.params),

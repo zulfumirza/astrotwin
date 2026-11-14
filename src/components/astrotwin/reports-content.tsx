@@ -116,7 +116,7 @@ export function ReportsContent() {
           </div>
         </article>
 
-        <article className="flex flex-col gap-4 rounded-2xl border bg-background p-5">
+        <article data-tour="privacy" className="flex flex-col gap-4 rounded-2xl border bg-background p-5">
           <div className="flex items-center gap-2">
             <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-(--insight-prediction) text-white">
               <LockIcon className="size-4" />
@@ -224,7 +224,7 @@ export function MissionControlContent() {
         }
       />
 
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <section data-tour="mc" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <article className="flex min-h-37.5 flex-col justify-between rounded-2xl border p-4">
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm font-medium tracking-tight">{t('mc.oneWay')}</p>

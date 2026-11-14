@@ -102,7 +102,37 @@ export function assess(crew: CrewMember, ctx: AssessContext): Assessment {
       sourceUrl: SOURCES.hazards,
     })
   }
-  if (record.visionChange) {
+  if (record.cognition && record.cognition.level !== 'nominal') {
+    // Go/No-Go and memory vs. the person's own baseline. Behavioural: privacy can withhold it.
+    findings.push({
+      id: 'event.cognition',
+      kind: 'event',
+      hazard: 'isolation',
+      level: record.cognition.level,
+      behavioral: true,
+      params: {
+        reasons: record.cognition.reasons.filter((r) => r !== 'firstBaseline').join(','),
+        span: record.cognition.span ?? '—',
+        spanBase: record.cognition.spanBaseline ?? '—',
+        commission: record.cognition.gng?.commission ?? 0,
+        omission: record.cognition.gng?.omission ?? 0,
+      },
+      sourceUrl: SOURCES.research,
+    })
+  }
+  if (record.vision && record.vision.level !== 'nominal') {
+    // Vision Check (screening only). Red flags are CRITICAL: the report goes to Earth automatically.
+    const v = record.vision
+    findings.push({
+      id: v.level === 'critical' ? 'event.visionUrgent' : v.level === 'alert' ? 'event.visionAlert' : 'event.visionWatch',
+      kind: 'event',
+      hazard: 'gravity',
+      level: v.level,
+      behavioral: false,
+      params: { reasons: v.reasons.join(','), drop: v.acuityDrop.toFixed(1) },
+      sourceUrl: SOURCES.risks,
+    })
+  } else if (!record.vision && (record.visionChange || record.eyeSymptom)) {
     findings.push({
       id: 'event.vision',
       kind: 'event',

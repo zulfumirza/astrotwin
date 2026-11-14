@@ -62,6 +62,12 @@ export interface DayRecord {
   headache: boolean
   /** Amsler-grid self test or reported visual change. */
   visionChange: boolean
+  /** Self-report: "eye or vision change" ticked in today's check-in. */
+  eyeSymptom?: boolean
+  /** Result of today's Vision Check, when one was done. */
+  vision?: import('./vision').VisionOutcome
+  /** Result of today's Go/No-Go and digit-span checks, when done. */
+  cognition?: import('./cognition').CognitionOutcome
   eva: boolean
   sepActive: boolean
 }
