@@ -165,11 +165,11 @@ Published programmes and methods that shaped what we measure and how we judge it
 
 - NASA Human Research Program — 5 hazards of human spaceflight: https://www.nasa.gov/hrp/hazards/ — the five hazard panels.
 - NASA HRP — Risks of human spaceflight: https://www.nasa.gov/hrp/risks/ — background for the rules and the source shown on every alert.
-- NASA Spaceflight Standard Measures: https://www.nasa.gov/reference/standard-measures/ — a small, repeated set of measures per crew member.
-- Cognition battery / PVT-B reaction self-test — our reaction test, Go/No-Go and number memory are short, simplified versions in the same spirit, not the validated NASA tests.
-- Karolinska Sleepiness Scale — reference for rating sleepiness; not yet an item in our check-in.
-- ISS vision checks for SANS (visual acuity, Amsler grid, eye questionnaire) — our Vision Check follows the same three parts in a short, screen-based form. Screening only.
-- APEX suite (mood, team cohesion, social support) — reference for the mood and stress self-report; cohesion and social support not yet included.
+- NASA Spaceflight Standard Measures: https://www.nasa.gov/reference/standard-measures/ — a small, repeated set of measures per crew member. BHP Standard Measures overview (NTRS): https://ntrs.nasa.gov/citations/20190000670
+- Cognition test battery (NASA Standard Measures): https://www.med.upenn.edu/uep/cognition.html — peer-reviewed: https://pmc.ncbi.nlm.nih.gov/articles/PMC4691281/. PVT-B / ISS "Reaction Self-Test" (NASA Spinoff 2013): https://spinoff.nasa.gov/Spinoff2013/hm_1.html — our reaction test, Go/No-Go and number memory are short, simplified versions in the same spirit, not the validated NASA tests.
+- Karolinska Sleepiness Scale — Åkerstedt T, Gillberg M (1990). Subjective and objective sleepiness in the active individual. Int J Neurosci 52:29–37. Validation: Kaida K, et al. (2006). Clin Neurophysiol 117:1574–81, doi:10.1016/j.clinph.2006.03.011 — reference for rating sleepiness; not yet an item in our check-in.
+- ISS vision checks for SANS (visual acuity, Amsler grid, eye questionnaire): https://ntrs.nasa.gov/citations/20180004916 and https://pmc.ncbi.nlm.nih.gov/articles/PMC10445111/ — our Vision Check follows the same three parts in a short, screen-based form. Screening only.
+- APEX suite (mood, team cohesion, social support), 2026 HRP Investigators' Workshop (NTRS): https://ntrs.nasa.gov/citations/20260002661 — reference for the mood and stress self-report; cohesion and social support not yet included.
 - NASA Open Science Data Repository (OSDR): https://osdr.nasa.gov/bio/repo/ — for future integration with real de-identified data.
 - NASA Life Sciences Data Portal: https://nlsp.nasa.gov/ — for future integration with real de-identified data.
 - CSA — Monitoring radiation for astronaut health (neutrons ≈ 30% of ISS radiation exposure): https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp

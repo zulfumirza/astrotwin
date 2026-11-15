@@ -69,21 +69,31 @@ export function SourcesContent() {
     },
   ]
 
-  // Links only where an official page is known; the rest are named methods without a link.
-  const refs: Array<{ id: string; href?: string }> = [
-    { id: 'hrp', href: 'https://www.nasa.gov/hrp/hazards/' },
-    { id: 'risks', href: 'https://www.nasa.gov/hrp/risks/' },
-    { id: 'std', href: 'https://www.nasa.gov/reference/standard-measures/' },
-    { id: 'pvt' },
-    { id: 'kss' },
-    { id: 'vision', href: 'https://www.nasa.gov/hrp/risks/' },
-    { id: 'apex' },
-    { id: 'osdr', href: 'https://osdr.nasa.gov/bio/repo/' },
-    { id: 'nlsp', href: 'https://nlsp.nasa.gov/' },
+  // Each reference: official / peer-reviewed links, or a written citation where no link is used.
+  const refs: Array<{ id: string; links?: string[]; cite?: string[] }> = [
+    { id: 'hrp', links: ['https://www.nasa.gov/hrp/hazards/'] },
+    { id: 'risks', links: ['https://www.nasa.gov/hrp/risks/'] },
+    { id: 'std', links: ['https://www.nasa.gov/reference/standard-measures/', 'https://ntrs.nasa.gov/citations/20190000670'] },
     {
-      id: 'csa',
-      href: 'https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp',
+      id: 'pvt',
+      links: [
+        'https://www.med.upenn.edu/uep/cognition.html',
+        'https://pmc.ncbi.nlm.nih.gov/articles/PMC4691281/',
+        'https://spinoff.nasa.gov/Spinoff2013/hm_1.html',
+      ],
     },
+    {
+      id: 'kss',
+      cite: [
+        'Åkerstedt T, Gillberg M (1990). Subjective and objective sleepiness in the active individual. Int J Neurosci 52:29–37.',
+        'Validation: Kaida K, et al. (2006). Clin Neurophysiol 117:1574–81. doi:10.1016/j.clinph.2006.03.011',
+      ],
+    },
+    { id: 'vision', links: ['https://ntrs.nasa.gov/citations/20180004916', 'https://pmc.ncbi.nlm.nih.gov/articles/PMC10445111/'] },
+    { id: 'apex', links: ['https://ntrs.nasa.gov/citations/20260002661'] },
+    { id: 'osdr', links: ['https://osdr.nasa.gov/bio/repo/'] },
+    { id: 'nlsp', links: ['https://nlsp.nasa.gov/'] },
+    { id: 'csa', links: ['https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp'] },
   ]
 
   // Simulated items: ranges come straight from the engine so this table never drifts.
@@ -172,7 +182,16 @@ export function SourcesContent() {
                 <span className="font-medium text-foreground">{s('howUsed')}: </span>
                 {s(`${r.id}.how` as SourcesKey)}
               </p>
-              {r.href ? <LinkOut href={r.href}>{r.href.replace('https://', '')}</LinkOut> : null}
+              {r.links?.map((href) => (
+                <LinkOut key={href} href={href}>
+                  {href.replace('https://', '')}
+                </LinkOut>
+              ))}
+              {r.cite?.map((c) => (
+                <p key={c} className="text-xs leading-relaxed text-muted-foreground">
+                  {c}
+                </p>
+              ))}
             </li>
           ))}
         </ul>
