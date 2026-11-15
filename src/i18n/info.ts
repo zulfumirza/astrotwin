@@ -65,6 +65,16 @@ const en: Record<InfoId, InfoText> = {
     skew: 'Talking, moving, a wrong cuff position, caffeine or stress.',
     tell: 'If it stays clearly off your usual, or you feel faint, get headaches or see spots.',
   },
+  diaBp: {
+    why: 'The lower blood-pressure number shows the pressure while the heart rests between beats.',
+    skew: 'Talking, moving, a wrong cuff position, caffeine or stress.',
+    tell: 'If it stays at 90 mmHg or higher, or you get headaches or feel faint.',
+  },
+  exerciseMin: {
+    why: 'Daily exercise is the main protection for bones, muscles and the heart in space.',
+    skew: 'Sessions that are not logged, or equipment that was out of service.',
+    tell: 'If pain, injury or workload keeps you from exercising for more than two days.',
+  },
   mskIndex: {
     why: 'Without gravity, bones and muscles weaken. This index tracks how well exercise is protecting them.',
     skew: 'A skipped or shortened exercise session, or an uneven test effort.',
@@ -147,6 +157,16 @@ const tr: Record<InfoId, InfoText> = {
     why: 'Tansiyon, kalbinin ve damarlarının başa doğru kayan sıvıyla nasıl başa çıktığını gösterir.',
     skew: 'Konuşmak, hareket etmek, manşonun yanlış durması, kafein ya da stres.',
     tell: 'Alışılmışından belirgin farklı kalırsa ya da bayılma hissi, baş ağrısı, gözde benekler olursa.',
+  },
+  diaBp: {
+    why: 'Tansiyonun küçük değeri, kalp atışlar arasında dinlenirken damarlardaki basıncı gösterir.',
+    skew: 'Konuşmak, hareket etmek, manşonun yanlış durması, kafein ya da stres.',
+    tell: '90 mmHg ya da üstünde kalırsa veya baş ağrısı, bayılma hissi olursa.',
+  },
+  exerciseMin: {
+    why: 'Günlük egzersiz uzayda kemik, kas ve kalbin başlıca korumasıdır.',
+    skew: 'Kaydedilmeyen seanslar ya da servis dışı kalan ekipman.',
+    tell: 'Ağrı, sakatlık ya da iş yükü iki günden fazla egzersizi engellerse.',
   },
   mskIndex: {
     why: 'Yerçekimi olmadan kemik ve kaslar zayıflar. Bu endeks egzersizin onları ne kadar koruduğunu izler.',

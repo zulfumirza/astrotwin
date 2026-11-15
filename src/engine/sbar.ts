@@ -52,6 +52,7 @@ export interface ReportPayload {
     glucose: number
     spo2: number
     sysBp: number
+    diaBp: number
     co2: number
     cumulativeDoseMsv: number
   }
@@ -97,6 +98,7 @@ export function buildPayload(
       glucose: a.record.glucose,
       spo2: a.record.spo2,
       sysBp: a.record.sysBp,
+      diaBp: a.record.diaBp,
       co2: Math.round(a.co2Avg3 * 10) / 10,
       cumulativeDoseMsv: Math.round(a.cumulativeDoseMsv),
     },

@@ -27,7 +27,9 @@ export type MetricId =
   | 'glucose'
   | 'spo2'
   | 'sysBp'
+  | 'diaBp'
   | 'mskIndex'
+  | 'exerciseMin'
 
 export interface DayRecord {
   day: number
@@ -45,6 +47,8 @@ export interface DayRecord {
   spo2: number
   /** Systolic blood pressure, mmHg. */
   sysBp: number
+  /** Diastolic blood pressure, mmHg. */
+  diaBp: number
   /** Simulated bone & muscle index, 100 = pre-flight. */
   mskIndex: number
   exerciseMin: number
@@ -112,6 +116,10 @@ export interface MetricState {
   earthAlarmDay: number | null
   /** First day the AstroTwin rule fires (3-day mean z ≥ 2), if any. */
   twinAlarmDay: number | null
+  /** Absolute-limit level today (only for metrics with fixed vital-sign limits). */
+  limitLevel: Level
+  /** Overall level: personal trajectory (z), Earth range and absolute limits combined. */
+  level: Level
 }
 
 export interface Finding {

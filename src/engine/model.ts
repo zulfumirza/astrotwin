@@ -38,6 +38,11 @@ export interface MetricDef {
   hazard: HazardId
   behavioral: boolean
   digits: number
+  /**
+   * Fixed vital-sign limits (prototype thresholds, not clinical rules). When set,
+   * they replace the Earth-range escalation: crossing `watch` → Watch, `alert` → Alert.
+   */
+  limits?: { dir: 'high' | 'low'; watch: number; alert?: number }
 }
 
 const sat = (day: number, tau: number) => 1 - Math.exp(-day / tau)
@@ -120,6 +125,7 @@ export const METRICS: Record<MetricId, MetricDef> = {
     hazard: 'environment',
     behavioral: false,
     digits: 1,
+    limits: { dir: 'high', watch: 37.8, alert: 38.5 },
   },
   glucose: {
     id: 'glucose',
@@ -142,6 +148,7 @@ export const METRICS: Record<MetricId, MetricDef> = {
     hazard: 'environment',
     behavioral: false,
     digits: 0,
+    limits: { dir: 'low', watch: 94, alert: 90 },
   },
   sysBp: {
     id: 'sysBp',
@@ -150,6 +157,30 @@ export const METRICS: Record<MetricId, MetricDef> = {
     bad: 'both',
     sdFloor: 4,
     adapt: (d) => -4 * sat(d, 20),
+    hazard: 'gravity',
+    behavioral: false,
+    digits: 0,
+    limits: { dir: 'high', watch: 140 },
+  },
+  diaBp: {
+    id: 'diaBp',
+    unit: 'mmHg',
+    earth: [60, 85],
+    bad: 'both',
+    sdFloor: 3,
+    adapt: (d) => -2 * sat(d, 20),
+    hazard: 'gravity',
+    behavioral: false,
+    digits: 0,
+    limits: { dir: 'high', watch: 90 },
+  },
+  exerciseMin: {
+    id: 'exerciseMin',
+    unit: 'min',
+    earth: [0, 999], // no Earth range: compared with the person's own routine
+    bad: 'low',
+    sdFloor: 10,
+    adapt: () => 0,
     hazard: 'gravity',
     behavioral: false,
     digits: 0,
@@ -215,7 +246,7 @@ interface Person {
   age: number
   base: { restHr: number; hrv: number; sleepH: number; pvtMs: number; lymph: number; bodyMass: number }
   /** Baselines for the vital signs added later (kept separate so the original series are unchanged). */
-  vitals: { tempC: number; glucose: number; spo2: number; sysBp: number; mskIndex: number }
+  vitals: { tempC: number; glucose: number; spo2: number; sysBp: number; diaBp: number; mskIndex: number }
 }
 
 // Fictional crew. Any resemblance to real astronauts is unintended.
@@ -226,7 +257,7 @@ const PEOPLE: Person[] = [
     role: { en: 'Commander', tr: 'Komutan' },
     age: 44,
     base: { restHr: 58, hrv: 66, sleepH: 7.3, pvtMs: 245, lymph: 2.1, bodyMass: 64 },
-    vitals: { tempC: 36.7, glucose: 86, spo2: 98, sysBp: 112, mskIndex: 100 },
+    vitals: { tempC: 36.7, glucose: 86, spo2: 98, sysBp: 112, diaBp: 72, mskIndex: 100 },
   },
   {
     id: 'plt',
@@ -234,7 +265,7 @@ const PEOPLE: Person[] = [
     role: { en: 'Pilot', tr: 'Pilot' },
     age: 39,
     base: { restHr: 61, hrv: 62, sleepH: 7.2, pvtMs: 250, lymph: 1.9, bodyMass: 76 },
-    vitals: { tempC: 36.6, glucose: 90, spo2: 98, sysBp: 118, mskIndex: 100 },
+    vitals: { tempC: 36.6, glucose: 90, spo2: 98, sysBp: 118, diaBp: 76, mskIndex: 100 },
   },
   {
     id: 'ms1',
@@ -242,7 +273,7 @@ const PEOPLE: Person[] = [
     role: { en: 'Mission Specialist', tr: 'Görev Uzmanı' },
     age: 36,
     base: { restHr: 56, hrv: 71, sleepH: 7.5, pvtMs: 238, lymph: 1.85, bodyMass: 81 },
-    vitals: { tempC: 36.8, glucose: 88, spo2: 97, sysBp: 121, mskIndex: 100 },
+    vitals: { tempC: 36.8, glucose: 88, spo2: 97, sysBp: 121, diaBp: 78, mskIndex: 100 },
   },
   {
     id: 'ms2',
@@ -250,7 +281,7 @@ const PEOPLE: Person[] = [
     role: { en: 'Flight Engineer', tr: 'Uçuş Mühendisi' },
     age: 41,
     base: { restHr: 60, hrv: 59, sleepH: 7.0, pvtMs: 256, lymph: 2.3, bodyMass: 68 },
-    vitals: { tempC: 36.7, glucose: 84, spo2: 98, sysBp: 114, mskIndex: 100 },
+    vitals: { tempC: 36.7, glucose: 84, spo2: 98, sysBp: 114, diaBp: 74, mskIndex: 100 },
   },
 ]
 
@@ -316,6 +347,7 @@ export function buildMission(
       const spo2 = v('spo2', 0.45)
       let sysBp = v('sysBp', 2.8)
       let mskIndex = v('mskIndex', 0.8)
+      let diaBp = v('diaBp', 2)
       let mood = 4
       let stress = 2
       let feelsFine = true
@@ -338,6 +370,7 @@ export function buildMission(
         // Sleep loss and less exercise show up metabolically too.
         glucose += 0.5 * drift
         sysBp += 0.3 * drift
+        diaBp += 0.2 * drift
         mskIndex -= 0.18 * drift
       }
 
@@ -372,6 +405,7 @@ export function buildMission(
         glucose: round(glucose, 0),
         spo2: Math.min(100, round(spo2, 0)),
         sysBp: round(sysBp, 0),
+        diaBp: round(diaBp, 0),
         mskIndex: round(mskIndex, 0),
         exerciseMin: round(Math.max(20, exerciseMin), 0),
         co2: co2ByDay[day - 1],

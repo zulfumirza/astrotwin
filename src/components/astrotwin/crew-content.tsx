@@ -44,6 +44,7 @@ import {
   usePrefersReducedMotion,
 } from './ui'
 import { BodyMap } from './body-map'
+import { VitalSigns } from './vital-cards'
 import type { InfoId } from '../../i18n/info'
 
 export const SCENARIOS: ScenarioId[] = ['nominal', 'hidden', 'storm', 'immune']
@@ -128,13 +129,13 @@ export function CrewContent() {
     .find((m) => m.twinAlarmDay !== null)
 
   const vitals: Array<{ id: InfoId; label: string; value: string; level: Level }> = [
-    ...(['restHr', 'sysBp', 'spo2', 'tempC', 'glucose', 'hrv', 'sleepH', 'pvtMs', 'lymph'] as const).map((id) => {
+    ...(['restHr', 'sysBp', 'diaBp', 'spo2', 'tempC', 'glucose', 'hrv', 'sleepH', 'pvtMs', 'lymph', 'exerciseMin'] as const).map((id) => {
       const m = current.metrics[id]
       return {
         id,
         label: t(`metric.${id}`),
         value: `${m.value} ${METRICS[id].unit}`,
-        level: (m.outsideEarth || m.zBad >= 3 ? 'critical' : m.deviant ? 'watch' : 'nominal') as Level,
+        level: m.level,
       }
     }),
     {
@@ -256,6 +257,8 @@ export function CrewContent() {
           })}
         </div>
       </section>
+
+      <VitalSigns assessment={current} />
 
       <BodyMap assessment={current} />
 

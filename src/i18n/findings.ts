@@ -26,7 +26,9 @@ export const METRIC_NAMES: Record<Lang, Record<MetricId, string>> = {
     glucose: 'Blood glucose (fasting)',
     spo2: 'Blood oxygen (SpO₂)',
     sysBp: 'Blood pressure (systolic)',
+    diaBp: 'Blood pressure (diastolic)',
     mskIndex: 'Bone & muscle index',
+    exerciseMin: 'Exercise',
   },
   tr: {
     restHr: 'Dinlenik nabız',
@@ -39,7 +41,9 @@ export const METRIC_NAMES: Record<Lang, Record<MetricId, string>> = {
     glucose: 'Kan şekeri (açlık)',
     spo2: 'Kan oksijeni (SpO₂)',
     sysBp: 'Tansiyon (sistolik)',
+    diaBp: 'Tansiyon (diyastolik)',
     mskIndex: 'Kemik ve kas endeksi',
+    exerciseMin: 'Egzersiz',
   },
 }
 
@@ -83,6 +87,8 @@ const METRIC_WHY: Record<Lang, Record<MetricId, string>> = {
     spo2: 'Falling blood oxygen means the body is not getting enough oxygen: a cabin air problem or a breathing problem.',
     sysBp: 'Blood pressure moving away from your space pattern can signal dehydration, stress or the heart adapting poorly.',
     mskIndex: 'Without gravity, bones and muscles weaken quickly; a faster-than-expected drop raises injury and fracture risk on landing.',
+    diaBp: 'The lower blood-pressure number rising above your usual can signal stress, poor sleep or fluid changes.',
+    exerciseMin: 'Less daily exercise than your routine speeds up bone, muscle and heart deconditioning in space.',
   },
   tr: {
     restHr: 'Beklenen sıvı kayması adaptasyonunun ötesinde yükselen dinlenik nabız; kondisyon kaybı, dehidrasyon ya da hastalık işareti olabilir.',
@@ -96,6 +102,8 @@ const METRIC_WHY: Record<Lang, Record<MetricId, string>> = {
     spo2: 'Düşen kan oksijeni vücudun yeterli oksijen alamadığını gösterir: kabin havası ya da solunum sorunu.',
     sysBp: 'Uzay düzeninden uzaklaşan tansiyon; dehidrasyon, stres ya da kalbin iyi uyum sağlayamadığının işareti olabilir.',
     mskIndex: 'Yerçekimi olmadan kemik ve kaslar hızla zayıflar; beklenenden hızlı düşüş, inişte yaralanma ve kırık riskini artırır.',
+    diaBp: 'Tansiyonun küçük değerinin alışılmışın üstüne çıkması stres, kötü uyku ya da sıvı değişikliklerinin işareti olabilir.',
+    exerciseMin: 'Rutininden az günlük egzersiz, uzayda kemik, kas ve kalp kondisyon kaybını hızlandırır.',
   },
 }
 
@@ -112,6 +120,8 @@ const METRIC_ACTION: Record<Lang, Record<MetricId, string>> = {
     spo2: 'Onboard protocol: re-seat the sensor and re-measure at rest; check cabin O₂ and CO₂ readings.',
     sysBp: 'Onboard protocol: rest 5 minutes and re-measure, check fluid intake, and log the result.',
     mskIndex: 'Onboard protocol: review resistive and treadmill exercise compliance and protein intake.',
+    diaBp: 'Onboard protocol: rest 5 minutes and re-measure, check fluid intake and sleep, and log the result.',
+    exerciseMin: 'Onboard protocol: plan the missed exercise session and check whether workload or equipment is in the way.',
   },
   tr: {
     restHr: 'Araç içi protokol: sıvı alımını kontrol et, dinlendikten sonra ölçümü tekrarla, egzersiz yükünü kaydet.',
@@ -125,6 +135,8 @@ const METRIC_ACTION: Record<Lang, Record<MetricId, string>> = {
     spo2: 'Araç içi protokol: sensörü yeniden yerleştir ve dinlenirken tekrar ölç; kabin O₂ ve CO₂ değerlerini kontrol et.',
     sysBp: 'Araç içi protokol: 5 dakika dinlenip yeniden ölç, sıvı alımını kontrol et, sonucu kaydet.',
     mskIndex: 'Araç içi protokol: dirençli egzersiz ve koşu bandı uyumunu ve protein alımını gözden geçir.',
+    diaBp: 'Araç içi protokol: 5 dakika dinlenip yeniden ölç, sıvı alımını ve uykuyu kontrol et, sonucu kaydet.',
+    exerciseMin: 'Araç içi protokol: kaçırılan egzersiz seansını planla, iş yükü ya da ekipman engel mi kontrol et.',
   },
 }
 

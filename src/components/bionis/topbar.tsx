@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { DatabaseIcon } from 'lucide-react'
 import {
   AlertDiamondIcon,
   AlertTriangleIcon,
@@ -217,6 +218,18 @@ export function DashboardTopbar() {
               onClick={openMobileSearch}
             >
               <SearchIcon className="size-4" />
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-lg"
+              className="size-11"
+              aria-label={t('nav.sources')}
+              title={t('nav.sources')}
+              onClick={() => navigate('/sources')}
+            >
+              <DatabaseIcon className="size-5" />
             </Button>
 
             <Button

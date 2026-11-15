@@ -10,6 +10,7 @@ import {
   QuestionIcon,
   TrendsIcon,
 } from '../bionis/icons'
+import { DatabaseIcon } from 'lucide-react'
 import type { UiKey } from '../../i18n/ui'
 
 export interface NavItem {
@@ -39,6 +40,7 @@ export const navGroups: Array<{ label: UiKey; items: NavItem[] }> = [
       { key: 'nav.reports', href: '/reports', icon: ReportsIcon },
       { key: 'nav.mc', href: '/mission-control', icon: BellIcon },
       { key: 'nav.settings', href: '/settings', icon: GearIcon },
+      { key: 'nav.sources', href: '/sources', icon: DatabaseIcon },
       { key: 'nav.help', href: '/help', icon: QuestionIcon },
     ],
   },

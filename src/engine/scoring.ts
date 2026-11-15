@@ -71,12 +71,12 @@ export function assess(crew: CrewMember, ctx: AssessContext): Assessment {
   // Single-metric findings (three-layer normal).
   for (const id of METRIC_IDS) {
     const m = metrics[id]
-    if (!m.deviant && !m.outsideEarth) continue
+    if (m.level === 'nominal') continue
     findings.push({
       id: `metric.${id}`,
       kind: 'metric',
       hazard: METRICS[id].hazard,
-      level: m.zBad >= 3 || m.outsideEarth ? 'alert' : 'watch',
+      level: m.level,
       behavioral: METRICS[id].behavioral,
       params: {
         value: m.value,

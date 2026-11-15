@@ -145,16 +145,44 @@ The included `Dockerfile` is picked up automatically. For production, prefer `--
 
 **Any other host** (Render, Railway, Fly.io…): build command `npm install && npm run build`, start command `npm start`, set the environment variables above.
 
-## Sources
+## Data sources
 
-- NASA HRP — 5 Hazards of Human Spaceflight: https://www.nasa.gov/hrp/hazards/
-- NASA HRP — Risks of Human Spaceflight: https://www.nasa.gov/hrp/risks/
-- NASA HRP — Ongoing Research: https://www.nasa.gov/hrp/ongoing-hrp-research/
-- CSA — Monitoring Radiation for Astronaut Health (neutrons ≈ 30% of ISS radiation exposure): https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp
-- NASA DONKI: https://kauai.ccmc.gsfc.nasa.gov/DONKI/
-- NOAA SWPC GOES proton flux: https://www.swpc.noaa.gov/products/goes-proton-flux
-- JPL Horizons API: https://ssd.jpl.nasa.gov/api/horizons.api
-- Dose models: Curiosity RAD cruise ≈ 1.84 mSv/day; Chang'e-4 LND lunar surface ≈ 1.37 mSv/day; NASA-STD-3001 career limit 600 mSv
+The same list is in the app under **Data & sources** (`/sources`, linked from the top bar and the footer).
+
+### Live NASA & agency data (LIVE)
+
+Fetched through the AstroTwin server (`/api/*`); keys stay on the server. Each call has a timeout, a cache and an offline fallback, and the app shows a Live / Cached / Embedded badge.
+
+| Source | What it is for | Endpoint | Used in the app |
+|---|---|---|---|
+| NASA DONKI | Solar energetic particle events (SEP), CMEs and space-weather notifications; 10–12 May 2024 for the GLE74 replay | `https://api.nasa.gov/DONKI/{SEP,CME,FLR,notifications}` → `/api/donki` | Radiation screen, solar-storm scenario |
+| NOAA SWPC GOES protons | Live ≥10 MeV / ≥100 MeV proton flux; ≥10 pfu (NOAA S1) raises "SEP active" | `https://services.swpc.noaa.gov/json/goes/primary/integral-protons-6-hour.json` → `/api/swpc` | Radiation chart, SEP status, crisis card |
+| JPL Horizons | Earth–Mars range → one-way signal delay | `https://ssd.jpl.nasa.gov/api/horizons.api` → `/api/horizons` | Top-bar delay, Mission Control, report arrival times |
+
+### NASA research behind our logic (REFERENCE)
+
+Published programmes and methods that shaped what we measure and how we judge it. We do not use their data directly.
+
+- NASA Human Research Program — 5 hazards of human spaceflight: https://www.nasa.gov/hrp/hazards/ — the five hazard panels.
+- NASA HRP — Risks of human spaceflight: https://www.nasa.gov/hrp/risks/ — background for the rules and the source shown on every alert.
+- NASA Spaceflight Standard Measures: https://www.nasa.gov/reference/standard-measures/ — a small, repeated set of measures per crew member.
+- Cognition battery / PVT-B reaction self-test — our reaction test, Go/No-Go and number memory are short, simplified versions in the same spirit, not the validated NASA tests.
+- Karolinska Sleepiness Scale — reference for rating sleepiness; not yet an item in our check-in.
+- ISS vision checks for SANS (visual acuity, Amsler grid, eye questionnaire) — our Vision Check follows the same three parts in a short, screen-based form. Screening only.
+- APEX suite (mood, team cohesion, social support) — reference for the mood and stress self-report; cohesion and social support not yet included.
+- NASA Open Science Data Repository (OSDR): https://osdr.nasa.gov/bio/repo/ — for future integration with real de-identified data.
+- NASA Life Sciences Data Portal: https://nlsp.nasa.gov/ — for future integration with real de-identified data.
+- CSA — Monitoring radiation for astronaut health (neutrons ≈ 30% of ISS radiation exposure): https://www.asc-csa.gc.ca/eng/news/articles/2026/2026-02-26-monitoring-radiation-astronaut-health.asp
+- NASA HRP — Ongoing research: https://www.nasa.gov/hrp/ongoing-hrp-research/
+
+### Simulated in this prototype (SIMULATED)
+
+- **Crew vital signs** (heart rate, blood pressure, SpO₂, body temperature, glucose, HRV): typical healthy-adult resting values with small daily noise; scenarios add slow, deliberate changes. Prototype limits: SpO₂ < 94 % Watch, < 90 % Alert; temperature ≥ 37.8 °C Watch, ≥ 38.5 °C Alert; blood pressure ≥ 140 / ≥ 90 mmHg Watch. These are demo thresholds, not clinical rules.
+- **Sleep**: about 7 h with day-to-day spread; the expected space curve is slightly shorter.
+- **Activity**: about 2 h of exercise per day; modeled.
+- **Radiation dose per crew member**: mission-profile dose rates — LEO 0.6 mSv/day (assumption), Moon 1.37 mSv/day (Chang'e-4 LND), Mars cruise 1.84 mSv/day (Curiosity RAD); NASA-STD-3001 career limit 600 mSv.
+
+Simulated readings are clearly labeled and are not real NASA measurements. Research prototype, not a medical device.
 
 ## Decisions and known limits
 

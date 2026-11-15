@@ -19,9 +19,9 @@ export const REGION_IDS: RegionId[] = ['brain', 'eyes', 'heart', 'lungs', 'msk',
 const REGION_METRICS: Record<RegionId, MetricId[]> = {
   brain: ['pvtMs', 'sleepH'],
   eyes: [],
-  heart: ['restHr', 'hrv', 'sysBp'],
+  heart: ['restHr', 'hrv', 'sysBp', 'diaBp'],
   lungs: ['spo2'],
-  msk: ['mskIndex', 'bodyMass'],
+  msk: ['mskIndex', 'bodyMass', 'exerciseMin'],
   body: ['tempC', 'glucose', 'lymph'],
 }
 /** Non-metric findings (events and compound rules) shown under each area. */
@@ -174,7 +174,7 @@ export function BodyMap({ assessment: a }: { assessment: Assessment }) {
       label: t(`metric.${id}`),
       value: `${m.value} ${METRICS[id].unit}`,
       note: t('value.expected', { value: `${m.expected.toFixed(METRICS[id].digits)} ${METRICS[id].unit}` }),
-      level: m.outsideEarth || m.zBad >= 3 ? 'alert' : m.deviant ? 'watch' : 'nominal',
+      level: m.level,
     }
   }
   const rows: Row[] = REGION_METRICS[region].map(metricRow)
@@ -189,8 +189,6 @@ export function BodyMap({ assessment: a }: { assessment: Assessment }) {
     })
   if (region === 'lungs')
     rows.push({ info: 'co2', label: t('metric.co2'), value: `${a.co2Avg3.toFixed(1)} mmHg`, level: a.co2Avg3 >= CO2_ELEVATED_MMHG ? 'watch' : 'nominal' })
-  if (region === 'msk')
-    rows.push({ info: 'exercise', label: t('metric.exercise'), value: `${a.record.exerciseMin} min`, level: 'nominal' })
   if (region === 'body')
     rows.unshift({
       info: 'dose',

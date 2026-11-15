@@ -170,3 +170,32 @@ describe('vision in the risk engine', () => {
     expect(a.tier).toBe('routine')
   })
 })
+
+describe('vital-sign limits (prototype thresholds)', () => {
+  const MARS = { profile: 'mars' as const, delaySec: 660 }
+  const at = (patch: Record<string, number>) => {
+    const m = applyDailyCheck(buildMission('nominal'), 'cdr', patch)
+    return assess(m.crew.find((c) => c.id === 'cdr')!, MARS)
+  }
+  const levelOf = (a: ReturnType<typeof at>, id: string) => a.findings.find((f) => f.id === `metric.${id}`)?.level ?? 'nominal'
+
+  it('SpO2: below 94 % → watch, below 90 % → alert', () => {
+    expect(levelOf(at({ spo2: 95 }), 'spo2')).toBe('nominal')
+    expect(levelOf(at({ spo2: 93 }), 'spo2')).toBe('watch')
+    expect(levelOf(at({ spo2: 89 }), 'spo2')).toBe('alert')
+  })
+  it('temperature: 37.8 °C → watch, 38.5 °C → alert', () => {
+    expect(at({ tempC: 37.8 }).metrics.tempC.limitLevel).toBe('watch')
+    expect(at({ tempC: 38.5 }).metrics.tempC.limitLevel).toBe('alert')
+    expect(at({ tempC: 37.0 }).metrics.tempC.limitLevel).toBe('nominal')
+  })
+  it('blood pressure: 140 systolic or 90 diastolic → watch', () => {
+    expect(at({ sysBp: 140 }).metrics.sysBp.limitLevel).toBe('watch')
+    expect(at({ diaBp: 90 }).metrics.diaBp.limitLevel).toBe('watch')
+    expect(at({ sysBp: 128, diaBp: 80 }).metrics.sysBp.limitLevel).toBe('nominal')
+  })
+  it('keeps the nominal crew free of vital findings', () => {
+    const a = at({})
+    for (const id of ['restHr', 'sysBp', 'diaBp', 'spo2', 'tempC', 'sleepH', 'exerciseMin']) expect(levelOf(a, id), id).toBe('nominal')
+  })
+})

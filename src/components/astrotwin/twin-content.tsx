@@ -26,7 +26,7 @@ import { useI18n } from '../../i18n'
 import { useMission } from '../../state/mission'
 import { AXIS_TICK, InfoButton, PageHeader, Pill, SimBadge, SimulatedBadge } from './ui'
 
-const CHART_METRICS: MetricId[] = ['pvtMs', 'sleepH', 'hrv', 'restHr', 'sysBp', 'spo2', 'tempC', 'glucose', 'lymph', 'mskIndex']
+const CHART_METRICS: MetricId[] = ['pvtMs', 'sleepH', 'hrv', 'restHr', 'sysBp', 'diaBp', 'spo2', 'tempC', 'glucose', 'lymph', 'mskIndex', 'exerciseMin']
 
 export function TwinContent() {
   const { t } = useI18n()

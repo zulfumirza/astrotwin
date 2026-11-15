@@ -6,7 +6,7 @@ import { useI18n } from './i18n'
 import { CrisisCard } from './components/astrotwin/crisis-card'
 import { GuidedTour } from './components/astrotwin/tour'
 import { ScreenErrorBoundary } from './components/astrotwin/error-boundary'
-import { useDashboardNavigation } from './components/bionis/navigation'
+import { DashboardLink, useDashboardNavigation } from './components/bionis/navigation'
 import './dashboard.css'
 
 type DashboardLayoutProps = {
@@ -70,6 +70,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </p>
             <p>{t('footer.disclaimer')}</p>
             <p className="flex flex-wrap gap-x-3 gap-y-1">
+              <DashboardLink href="/sources" className="font-medium text-foreground underline underline-offset-4 hover:text-muted-foreground">
+                {t('nav.sources')}
+              </DashboardLink>
+              <span>·</span>
               <span>{t('footer.sources')}:</span>
               {FOOTER_LINKS.map((l) => (
                 <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="underline-offset-4 hover:text-foreground hover:underline">

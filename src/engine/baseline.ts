@@ -6,7 +6,7 @@
 // trajectory — not when they finally leave the Earth range.
 
 import { BASELINE_DAYS, METRICS } from './model'
-import type { Baseline, DayRecord, MetricId, MetricState } from './types'
+import type { Baseline, DayRecord, Level, MetricId, MetricState } from './types'
 
 export const Z_ALARM = 2
 export const PERSISTENCE_DAYS = 3
@@ -80,6 +80,17 @@ export function twinAlarmDay(
   return null
 }
 
+/** Level from the fixed vital-sign limits (nominal when the metric has none). */
+export function limitLevel(id: MetricId, value: number): Level {
+  const l = METRICS[id].limits
+  if (!l) return 'nominal'
+  const crossed = (t: number) => (l.dir === 'high' ? value >= t : value < t)
+  if (l.alert !== undefined && crossed(l.alert)) return 'alert'
+  return crossed(l.watch) ? 'watch' : 'nominal'
+}
+
+const RANK: Record<Level, number> = { nominal: 0, watch: 1, alert: 2, critical: 3 }
+
 export function metricState(days: DayRecord[], id: MetricId): MetricState {
   const baseline = computeBaseline(days, id)
   const last = days[days.length - 1]
@@ -96,7 +107,21 @@ export function metricState(days: DayRecord[], id: MetricId): MetricState {
     outsideEarth: outsideEarth(id, last[id]),
     earthAlarmDay: earthAlarmDay(days, id),
     twinAlarmDay: twinAlarmDay(days, id, baseline),
+    ...levels(id, last[id], days.length > BASELINE_DAYS ? zBad : 0),
   }
+}
+
+/**
+ * Personal trajectory: z ≥ 2 → Watch, z ≥ 3 → Alert. Metrics with fixed limits
+ * (SpO₂, temperature, blood pressure) use those limits instead of the Earth range;
+ * the others escalate to Alert outside the Earth range, as before.
+ */
+function levels(id: MetricId, value: number, zBad: number): { limitLevel: Level; level: Level } {
+  const lim = limitLevel(id, value)
+  let level: Level = zBad >= 3 ? 'alert' : zBad >= Z_ALARM ? 'watch' : 'nominal'
+  if (!METRICS[id].limits && outsideEarth(id, value)) level = 'alert'
+  if (RANK[lim] > RANK[level]) level = lim
+  return { limitLevel: lim, level }
 }
 
 export interface TwinSeriesPoint {
